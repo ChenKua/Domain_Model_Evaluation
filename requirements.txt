@@ -1,0 +1,5 @@
+worde4mde==1.0
+openai==1.0.1
+pandas
+numpy
+networkx==3.2.1

@@ -1,0 +1,93 @@
+Enumerations:
+DeviceStatus (Activated, Deactivated)
+ControlCommand (LockDoor, TurnOnHeating)
+Status (Requested, Completed, Failed)
+RuleStatus (Created, Edited, Activated, Deactivated)
+
+TypeOfActuator (LightController, LockController)
+
+TypeOfSensor(TemperatureSensor, MovementSensor)
+Classes:
+SHAS()
+SmartHome(string address)
+User()
+
+Room()
+Device(string deviceIdentifier)
+SensorDevice(TypeOfSensor typeOfSensor)
+ActuatorDevice(TypeOfActuator typeOfActuator)
+ActivityLog()
+
+SensorReading(float measuredValue, time timeStamp)
+ActuatorCommand (ControlCommand controlCommand, Time timeStamp, Status status)
+AutomationRule (  RuleStatus ruleStatus, Time timeStamp)
+Precondition ()
+RelationalTerm ()
+
+
+Action()
+InfrastructureMap()
+ChangeInState(DeviceStatus deviceStatus)
+Owner()
+SeparationWord(String word)
+
+Relationships:
+
+1 SHAS contain * User
+
+
+* Room associate 1 SmartHome
+
+
+1 SHAS contain 1 ActivityLog
+
+
+* Device assocaite 1 Room
+
+1 ActivityLog associate * SensorReading
+1 ActivityLog associate * ActuatorCommand
+
+1 SensorDevice contain * SensorReading
+
+1 ActuatorDevice contain * ActuatorCommand
+
+1..* AutomationRule contain 1..* Precondition
+1..* AutomationRule contain 1..* Action
+
+
+
+
+
+
+
+
+
+
+
+* Action associate 1..* ActuatorCommand
+
+
+
+
+
+
+SensorDevice inherit Device
+ActuatorDevice inherit Device
+Device inherit RelationalTerm
+
+Room inherit RelationalTerm
+
+User inherit Owner
+1 SHAS contain 1 InfrastructureMap
+SensorReading inherit RelationalTerm
+ActuatorCommand inherit RelationalTerm
+* ChangeInState associate 1 Device
+* ChangeInState associate 1 InfrastructureMap
+
+* AutomationRule associate * AutomationRule
+1 Owner associate * AutomationRule
+* Owner associate * SmartHome
+* Precondition associate * RelationalTerm
+
+
+1..* SeparationWord associate * Precondition

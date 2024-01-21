@@ -1,0 +1,75 @@
+Enumerations:
+DeviceStatus(Activated, Deactivated)
+CommandType (lockDoor, turnOnHeating)
+CommandStatus (Requested, Completed, Failed)
+RuleStatus (created, edited, activated, deactivated )
+BinaryOp (AND, OR )
+
+
+
+Classes:
+SHAS()
+SmartHome()
+User(string name)
+Address(string city, string postalCode, string street, string aptNumber)
+Room()
+abstract Device(DeviceStatus deviceStatus, int deviceID)
+SensorDevice()
+ActuatorDevice()
+ActivityLog()
+abstract RuntimeElement(time timestamp)
+SensorReading(double value)
+ControlCommand (CommandType commandType, CommandStatus commandStatus)
+AlertRule (RuleStatus ruleStatus)
+abstract BooleanExpression()
+RelationalTerm()
+NotExpression()
+BinaryExpression(BinaryOp binaryOp)
+CommandSequence()
+
+
+
+
+
+Relationships:
+1 SHAS contain * SmartHome
+1 SHAS contain * User
+
+1 SmartHome contain 0..1 Address
+1 SmartHome contain 0..* Room
+1 SmartHome contain 0..1 ActivityLog
+* SmartHome associate * User
+
+1 Room contain * SensorDevice
+1 Room contain * ActuatorDevice
+
+
+1 ActivityLog contain * SensorReading
+1 ActivityLog contain * ControlCommand
+
+* SensorReading associate 1 SensorDevice
+
+* ControlCommand associate 1 ActuatorDevice
+
+1 AlertRule contain 0..1 BooleanExpression
+1 AlertRule contain * CommandSequence
+
+* RelationalTerm associate 0..1  Room
+* RelationalTerm associate 0..1  Device
+* RelationalTerm associate 0..1  RuntimeElement
+
+0..1 NotExpression associate 1 BooleanExpression
+
+0..1 BinaryExpression associate 1 BooleanExpression
+0..1 BinaryExpression associate 1 BooleanExpression
+
+* CommandSequence associate 0..1 CommandSequence
+1 CommandSequence contain 0..1 ControlCommand
+
+SensorReading inherit RuntimeElement
+ControlCommand inherit RuntimeElement
+NotExpression inherit BooleanExpression
+BinaryExpression inherit BooleanExpression
+RelationalTerm inherit BooleanExpression
+SensorDevice inherit Device
+ActuatorDevice inherit Device
