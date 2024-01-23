@@ -1,0 +1,80 @@
+Enumerations:
+
+Command ( lockDoor, turnOnHeating )
+
+
+
+
+Classes:
+SHAS()
+SmartHome()
+User(string name)
+Address(string city, string postalCode, string streetAddress, string province)
+Room(string name)
+abstract Device(String identifier, boolean isActivated, String status, String type)
+Sensor(String measuredValue)
+Actuator ()
+ActivityLog()
+
+SensorReading(string timeStamp, string measuredValue)
+ControlCommand(Command command, String timeStamp, String status)
+AutomationRule(boolean isActivated)
+Precondition(boolean isTriggered)
+
+
+
+
+Action()
+
+Owner()
+
+AutomationRuleLog(String timeStamp)
+
+Relationships:
+
+1 SHAS contain * User
+
+1 SmartHome contain 1 Address
+1 SmartHome contain * Room
+1 SmartHome contain 1 ActivityLog
+
+
+1 Room contain * Device
+
+
+1 ActivityLog associate * SensorReading
+1 ActivityLog associate * ControlCommand
+
+1 Sensor associate 1 SensorReading
+
+1..* Actuator  associate 1 ControlCommand
+
+1 AutomationRule contain 1 Precondition
+1 AutomationRule contain 1 Action
+
+
+
+
+
+
+
+
+
+
+
+1 Action contain 1..* ControlCommand
+
+
+
+
+
+
+Sensor inherit Device
+Actuator inherit Device
+
+1 User contain 0..1 Owner
+1 Owner contain * SmartHome
+1 SmartHome contain * SensorReading 
+1 SmartHome contain * AutomationRule
+
+1 AutomationRule contain * AutomationRuleLog

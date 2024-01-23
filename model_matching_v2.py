@@ -1,11 +1,13 @@
 # %% [markdown]
 # # Set up
 
+import ast
 import json
 import os
 # %%
 import pickle
 import re
+import sys
 
 import networkx as nx
 import numpy as np
@@ -17,15 +19,24 @@ from worde4mde import load_embeddings
 # %%
 
 # put the huggingface api key
-openai_key = "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"
+openai_key = "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"
 os.environ["OPENAI_API_KEY"] = openai_key
 
 openai.api_key = openai_key
 
 # %%
+if len(sys.argv) != 2:
+    print("Usage: python script_name.py arg1 arg2")
+    sys.exit(1)
+
+g = sys.argv[1]
+print("group:", g)
+
+
+# %%
 instructor_dir = "smart_home/"
 instructor_input = instructor_dir + "instructor.txt"
-student_dir = "smart_home/G2/"
+student_dir = "smart_home/GX/".replace("GX", g)
 
 student_input = student_dir + "dsl.txt"
 student_input
@@ -62,9 +73,6 @@ def splitCamelCase(word):
 splitCamelCase("device ID")
 
 # %%
-
-
-# %%
 client = OpenAI()
 
 
@@ -89,46 +97,6 @@ def get_embedding(text, model="text-embedding-ada-002"):
 
 
 # %%
-# get manuall matched class
-def get_manual_matching(matching_ref, G2_sol):
-    ref_class = []
-    tmp = matching_ref.strip().splitlines()
-    ref_class = [i.split("(")[0].strip() for i in tmp]
-    ref_class
-
-    G2_class = []
-    tmp = G2_sol.strip().splitlines()
-    G2_class = [i.split("(")[0].strip() for i in tmp]
-    G2_class
-
-    max_length = max(len(G2_class), len(ref_class))
-    for i in range(max_length - len(ref_class)):
-        ref_class.append("")
-
-    for i in range(max_length - len(G2_class)):
-        G2_class.append("")
-
-    matching_pair = []
-
-    for i in range(len(ref_class)):
-        ref_tmp = ref_class[i]
-        stu_tmp = group_class[i]
-
-        if len(ref_tmp) == 0:
-            ref_tmp = None
-
-        if len(stu_tmp) == 0:
-            stu_tmp = None
-
-        pair = (ref_tmp, stu_tmp)
-        if ref_tmp == None and stu_tmp == None:
-            pass
-        else:
-            matching_pair.append(pair)
-        return matching_pair
-
-
-# %%
 def get_all_info(class_index, class_nodes, list_of_classes, list_edges, need_edge=True):
     result = ""
     result += list_of_classes[class_index] + "\n"
@@ -144,36 +112,6 @@ def get_all_info(class_index, class_nodes, list_of_classes, list_edges, need_edg
                 result += edge + "\n"
 
     return result
-
-
-# %%
-# def compare_attributes(ref_attr, stu_attr, ref_dsl, stu_dsl):
-#   # if this is a exact match
-#   if ref_attr.lower() == stu_attr.lower():
-#     print("exatc match")
-#     return True, 1, 1
-
-#   # get synons for ref_attributes
-#   first_prompt = prompt.format(class_dsl = ref_dsl, attribute = ref_attr)
-#   ref_synons = run_llm(first_prompt).split(",")
-#   ref_synons.append(ref_attr)
-
-#   second_prompt = prompt.format(class_dsl = stu_dsl, attribute = stu_attr)
-#   stu_synons = run_llm(second_prompt).split(",")
-#   stu_synons.append(stu_attr)
-
-#   for i in ref_synons:
-#     for j in stu_synons:
-#       if i.strip().lower() == j.strip().lower():
-#         print("synons match", i, j)
-#         return True, 1, 1
-#   print("match failed")
-#   return False, 0, 0
-
-# %%
-# prompt = """You are a grader for a university software engineering course. The midterm exam is about developing a domain model using a UML class diagram from scratch.  You are comparing the student's solution with the instructor's solution.
-# Given a class and its attributes is: {class_dsl}
-# What are some synonyms or other representations or names for the attribute: {attribute}? Do say anything but only provide such synonyms and separate them by comma."""
 
 
 # %%
@@ -922,6 +860,7 @@ def combine_two_dict(
 raw_1 = []
 ref_source = []
 tup_r = []
+# get attributes on instrucotr sides
 for cls in ref_cls.cls_atr:
     for attributes in ref_cls.cls_atr[cls]["attributes"]:
         if ref_cls.cls_atr[cls]["attributes"][attributes]["counterpart"] == None:
@@ -932,6 +871,7 @@ for cls in ref_cls.cls_atr:
 raw_2 = []
 stu_source = []
 tup_s = []
+# get attributes on student sides
 for cls in stu_cls.cls_atr:
     for attributes in stu_cls.cls_atr[cls]["attributes"]:
         if stu_cls.cls_atr[cls]["attributes"][attributes]["counterpart"] == None:
@@ -976,8 +916,99 @@ ref_cls.cls_atr["Address"]
 # %% [markdown]
 # ## Stage 2.2.1 Attribute mapping atr -> cls
 
+# %%
+#  get non-mapped attributes on instrucotr side
+
+raw_1 = []
+ref_source = []
+tup_r = []
+# get attributes on instrucotr sides
+for cls in ref_cls.cls_atr:
+    for attributes in ref_cls.cls_atr[cls]["attributes"]:
+        if ref_cls.cls_atr[cls]["attributes"][attributes]["counterpart"] == None:
+            raw_1.append(attributes)
+            ref_source.append(cls)
+            tup_r.append((attributes, cls))
+
+raw_2 = []
+stu_source = []
+tup_s = []
+# get un-mapped class on student sides
+for cls in stu_cls.cls_atr:
+    if stu_cls.cls_atr[cls]["counterpart"] == None:
+        raw_2.append(cls)
+        stu_source.append(cls)
+        tup_s.append((cls, cls))
+
+list_1 = create_cosine_distance_list(raw_1, raw_2, sgram_mde)
+list_2 = create_cosine_distance_list(ref_source, stu_source, sgram_mde)
+combined = combine_two_dict(list_1, list_2, raw_1, raw_2, ref_source, stu_source)
+
+mappings = map_attributes(tup_r, tup_s, combined)[0]
+
+for mapping in mappings:
+    print(mapping)
+    if mapping[0] != None and mapping[1] != None:
+        # scores = check_attributes_type(mapping[0][0], mapping[1][0], ref_cls.cls_atr, stu_cls.cls_atr)
+        ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]]["score"] = 0.5
+        ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]]["counterpart"] = (
+            None,
+            mapping[1][1],
+        )
+
+        stu_cls.cls_atr[mapping[1][1]]["score"] = 0.5
+        stu_cls.cls_atr[mapping[1][1]]["counterpart"] = mapping[0]
+
+print("=" * 20)
+
+
 # %% [markdown]
-# ## Stage 2.2.1 Attribute mapping cls -> atr
+# ## Stage 2.2.2 Attribute mapping cls -> atr
+
+# %%
+#  get non-mapped cls on instrucotr side
+
+raw_1 = []
+ref_source = []
+tup_r = []
+# get class on instrucotr sides
+for cls in ref_cls.cls_atr:
+    if ref_cls.cls_atr[cls]["counterpart"] == None:
+        raw_1.append(cls)
+        ref_source.append(cls)
+        tup_r.append((cls, cls))
+
+raw_2 = []
+stu_source = []
+tup_s = []
+# get un-mapped class on student sides
+for cls in stu_cls.cls_atr:
+    for attributes in stu_cls.cls_atr[cls]["attributes"]:
+        if stu_cls.cls_atr[cls]["attributes"][attributes]["counterpart"] == None:
+            raw_2.append(attributes)
+            stu_source.append(cls)
+            tup_s.append((attributes, cls))
+
+list_1 = create_cosine_distance_list(raw_1, raw_2, sgram_mde)
+list_2 = create_cosine_distance_list(ref_source, stu_source, sgram_mde)
+combined = combine_two_dict(list_1, list_2, raw_1, raw_2, ref_source, stu_source)
+
+mappings = map_attributes(tup_r, tup_s, combined)[0]
+
+for mapping in mappings:
+    print(mapping)
+    if mapping[0] != None and mapping[1] != None:
+        # scores = check_attributes_type(mapping[0][0], mapping[1][0], ref_cls.cls_atr, stu_cls.cls_atr)
+        ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]]["score"] = 0.5
+        ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]][
+            "counterpart"
+        ] = mapping[1]
+
+        stu_cls.cls_atr[mapping[1][1]]["score"] = 0.5
+        stu_cls.cls_atr[mapping[1][1]]["counterpart"] = (None, mapping[0][1])
+
+print("=" * 20)
+
 
 # %% [markdown]
 # ## Stage 3: Relationship mapping
@@ -1131,8 +1162,9 @@ for i, ref_tmp in enumerate(edges[0].raw_dsl):
 # ### save matching to disk
 
 # %%
-with open(student_out_dir + "matching.pkl", "wb") as outp:
-    pickle.dump(grader, outp, pickle.HIGHEST_PROTOCOL)
+
+if not os.path.exists(student_out_dir):
+    os.makedirs(student_out_dir)
 
 # %%
 with open(student_out_dir + "matching.pkl", "wb") as outp:
@@ -1148,7 +1180,33 @@ with open(student_out_dir + "solution_matching.txt", "w") as file:
 
 
 with open(student_out_dir + "student_matching.txt", "w") as file:
-    file.write(json.dumps(grader.ref.cls_atr))
+    file.write(json.dumps(grader.stu.cls_atr))
+
+with open(student_out_dir + "solution_matching_relationship.txt", "w") as file:
+    file.write(json.dumps(grader.ref.rel.rels))
+
+
+with open(student_out_dir + "student_matching_relationship.txt", "w") as file:
+    file.write(json.dumps(grader.stu.rel.rels))
+
+# %%
+
+
+# # as requested in comment
+
+# with open(student_dir + "human_eval/" + 'ref_meta_cls.py', 'w') as file:
+#      file.write(json.dumps(grader.ref.cls_atr))
+
+
+# with open(student_dir + "human_eval/" + 'stu_meta_cls.py', 'w') as file:
+#      file.write(json.dumps(grader.stu.cls_atr))
+
+# with open(student_dir + "human_eval/" + 'ref_meta_rels.py', 'w') as file:
+#      file.write(json.dumps(grader.ref.rel.rels))
+
+
+# with open(student_dir + "human_eval/" + 'stu_meta_rels.py', 'w') as file:
+#      file.write(json.dumps(grader.stu.rel.rels))
 
 # %%
 algo_result = {}
@@ -1269,29 +1327,40 @@ with open(student_out_dir + "algo_result.txt", "w") as file:
 
 
 class HumanEvaluation(object):
-    def __init__(self, ref_cls, stu_cls, ref_rels, stu_rels):
+    def __init__(self, ref_cls=None, stu_cls=None, ref_rels=None, stu_rels=None):
         self.ref_cls = ref_cls
         self.stu_cls = stu_cls
         self.ref_rels = ref_rels
         self.stu_rels = stu_rels
 
 
-# with open('G2_human_grade.pkl', 'wb') as outp:
-#     g2 = HumanEvaluation(ref_cls_human, stu_cls_human, ref_rel_human, stu_rel_human)
-#     pickle.dump(g2, outp, pickle.HIGHEST_PROTOCOL)
-
-
-with open(student_dir + "human_grade.pkl", "rb") as inp:
-    group = pickle.load(inp)
+group = HumanEvaluation()
 
 
 # %%
-# load human evaluation result in the pkl
 
-ref_cls_human = group.ref_cls
-stu_cls_human = group.stu_cls
-ref_rel_human = group.ref_rels
-stu_rel_human = group.stu_rels
+
+# as requested in comment
+
+with open(student_dir + "human_eval/" + "ref_meta_cls.py", "r") as file:
+    content = file.read()
+    ref_cls_human = ast.literal_eval(content)
+    group.ref_cls = ref_cls_human
+
+with open(student_dir + "human_eval/" + "stu_meta_cls.py", "r") as file:
+    content = file.read()
+    stu_cls_human = ast.literal_eval(content)
+    group.stu_cls = stu_cls_human
+
+with open(student_dir + "human_eval/" + "ref_meta_rels.py", "r") as file:
+    content = file.read()
+    ref_rel_human = ast.literal_eval(content)
+    group.ref_rels = ref_rel_human
+
+with open(student_dir + "human_eval/" + "stu_meta_rels.py", "r") as file:
+    content = file.read()
+    stu_rel_human = ast.literal_eval(content)
+    group.stu_rels = stu_rel_human
 
 # %% [markdown]
 # ### class
@@ -1835,8 +1904,12 @@ def find_mapping_with_cls(mapping_dict, mapping, pos):
     for i in mapping_dict:
         if i[pos] == mapping[pos]:
             return i
+    print("no mapping is found with", mapping, pos)
     return None
 
+
+# %%
+EMB_mappings_dict
 
 # %%
 human_mappings_dict
@@ -2191,6 +2264,7 @@ for dic in tmp:  # cls
     # cls is a dict
 
     matching = (dic["dsl"], dic["counterpart"], dic["score"])
+
     human_mappings.append(matching)
 
 
@@ -2284,6 +2358,14 @@ for i in human_mappings:
 
 # %%
 EMB_mappings_dict
+
+# %%
+EMB_mappings_dict
+
+# %%
+for i in human_mappings_dict:
+    if i[0] == "1 AutomationRule contain * Action":
+        print(i)
 
 # %%
 human_mappings_dict
