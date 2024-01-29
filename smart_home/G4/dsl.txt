@@ -1,0 +1,74 @@
+Enumerations:
+
+CommandType(lockDoor, turnOnHeating)
+Status(requested, completed, failed)
+
+Operator(NOT, AND, OR)
+
+Classes:
+
+Home( string address, string singleton)
+User( string user, string password)
+
+Room(string name)
+Device( int uid, boolean isEnabled)
+Sensor()
+Actuator()
+ActivityLog()
+
+SensorReading( double reading, Time timeStamp)
+Command( commandType type, Time timeStamp, Status status)
+
+AutomationRule()
+ComposedRelation( Operator operator)
+AtomicRelation( condition)
+
+
+
+
+
+
+
+Relationships:
+
+
+
+
+1 Home contain * Room
+1 Home contain 1 ActivityLog
+
+
+1 Room contain * Device
+
+
+1 ActivityLog associate  * SensorReading
+1 ActivityLog associate   * Command
+
+1 Sensor contain * SensorReading
+
+1 Actuator contain * Command
+
+1 AutomationRule contain  0..1 ComposedRelation
+
+
+* AtomicRelation associate  0..1 Room
+* AtomicRelation associate  0..1 Device
+
+* AtomicRelation associate  0..1 Command
+
+
+1 ComposedRelation contain  2 AtomicRelation
+
+
+
+
+
+
+
+
+
+
+Sensor inherit Device
+Actuator inherit Device
+1 AutomationRule contain 0..1  AtomicRelation
+1 User contain * AutomationRule

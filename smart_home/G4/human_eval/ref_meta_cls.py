@@ -10,13 +10,16 @@
         },
     },
     "CommandType": {
-        "score": 0,
+        "score": 1,
         "type": "enum",
         "dsl": "CommandType (lockDoor, turnOnHeating)",
-        "counterpart": None,
+        "counterpart": "CommandType",
         "attributes": {
-            "lockDoor": {"score": 0, "counterpart": None},
-            "turnOnHeating": {"score": 0, "counterpart": None},
+            "lockDoor": {"score": 1, "counterpart": ("lockDoor", "CommandType")},
+            "turnOnHeating": {
+                "score": 1,
+                "counterpart": ("turnOnHeating", "CommandType"),
+            },
         },
     },
     "CommandStatus": {
@@ -25,9 +28,9 @@
         "dsl": "CommandStatus (Requested, Completed, Failed)",
         "counterpart": "Status",
         "attributes": {
-            "Requested": {"score": 1, "counterpart": ("Requested", "Status")},
-            "Completed": {"score": 1, "counterpart": ("Completed", "Status")},
-            "Failed": {"score": 1, "counterpart": ("Failed", "Status")},
+            "Requested": {"score": 1, "counterpart": ("requested", "Status")},
+            "Completed": {"score": 1, "counterpart": ("completed", "Status")},
+            "Failed": {"score": 1, "counterpart": ("failed", "Status")},
         },
     },
     "RuleStatus": {
@@ -38,10 +41,7 @@
         "attributes": {
             "created": {"score": 0, "counterpart": None},
             "edited": {"score": 0, "counterpart": None},
-            "activated": {
-                "score": 0.5,
-                "counterpart": ("boolean activated", "AutomationRule"),
-            },
+            "activated": {"score": 0, "counterpart": None},
             "deactivated": {"score": 0, "counterpart": None},
         },
     },
@@ -51,22 +51,22 @@
         "dsl": "BinaryOp (AND, OR )",
         "counterpart": "Operator",
         "attributes": {
-            "AND": {"score": 1, "counterpart": ("and", "Operator")},
-            "OR": {"score": 1, "counterpart": ("or", "Operator")},
+            "AND": {"score": 1, "counterpart": ("AND", "Operator")},
+            "OR": {"score": 1, "counterpart": ("OR", "Operator")},
         },
     },
     "SHAS": {
-        "score": 1,
+        "score": 0,
         "type": "regular",
         "dsl": "SHAS()",
-        "counterpart": "SHAS",
+        "counterpart": None,
         "attributes": {},
     },
     "SmartHome": {
         "score": 1,
         "type": "regular",
         "dsl": "SmartHome()",
-        "counterpart": "SmartHome",
+        "counterpart": "Home",
         "attributes": {},
     },
     "User": {
@@ -74,7 +74,9 @@
         "type": "regular",
         "dsl": "User(string name)",
         "counterpart": "User",
-        "attributes": {"string name": {"score": 0, "counterpart": None}},
+        "attributes": {
+            "string name": {"score": 1, "counterpart": ("string user", "User")}
+        },
     },
     "Address": {
         "score": 0,
@@ -82,21 +84,18 @@
         "dsl": "Address(string city, string postalCode, string street, string aptNumber)",
         "counterpart": None,
         "attributes": {
-            "string city": {
-                "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
-            },
+            "string city": {"score": 0.5, "counterpart": ("string address", "Home")},
             "string postalCode": {
                 "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
+                "counterpart": ("string address", "Home"),
             },
             "string street": {
                 "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
+                "counterpart": ("string address", "Home"),
             },
             "string aptNumber": {
                 "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
+                "counterpart": ("string address", "Home"),
             },
         },
     },
@@ -108,13 +107,16 @@
         "attributes": {},
     },
     "abstract Device": {
-        "score": 1,
+        "score": 0.5,
         "type": "abstract",
         "dsl": "abstract Device(DeviceStatus deviceStatus, int deviceID)",
-        "counterpart": "abstract Device",
+        "counterpart": "Device",
         "attributes": {
-            "DeviceStatus deviceStatus": {"score": 0, "counterpart": None},
-            "int deviceID": {"score": 1, "counterpart": ("int id", "abstract Device")},
+            "DeviceStatus deviceStatus": {
+                "score": 0.5,
+                "counterpart": ("boolean isEnabled", "Device"),
+            },
+            "int deviceID": {"score": 1, "counterpart": ("int uid", "Device")},
         },
     },
     "SensorDevice": {
@@ -139,14 +141,14 @@
         "attributes": {},
     },
     "abstract RuntimeElement": {
-        "score": 1,
+        "score": 0,
         "type": "abstract",
         "dsl": "abstract RuntimeElement(time timestamp)",
-        "counterpart": "abstract Dependency",
+        "counterpart": None,
         "attributes": {
             "time timestamp": {
                 "score": 0.5,
-                "counterpart": ("DateTime timestamp", "SensorReading"),
+                "counterpart": ("Time timeStamp", "Command"),
             }
         },
     },
@@ -158,7 +160,7 @@
         "attributes": {
             "double value": {
                 "score": 1,
-                "counterpart": ("int measuredValue", "SensorReading"),
+                "counterpart": ("double reading", "SensorReading"),
             }
         },
     },
@@ -166,12 +168,15 @@
         "score": 1,
         "type": "regular",
         "dsl": "ControlCommand (CommandType commandType, CommandStatus commandStatus)",
-        "counterpart": "ControlCommand",
+        "counterpart": "Command",
         "attributes": {
-            "CommandType commandType": {"score": 0, "counterpart": None},
+            "CommandType commandType": {
+                "score": 1,
+                "counterpart": ("commandType type", "Command"),
+            },
             "CommandStatus commandStatus": {
                 "score": 1,
-                "counterpart": ("Status status", "ControlCommand"),
+                "counterpart": ("Status status", "Command"),
             },
         },
     },
@@ -186,40 +191,35 @@
         "score": 0.5,
         "type": "abstract",
         "dsl": "abstract BooleanExpression()",
-        "counterpart": "Precondition",
+        "counterpart": "ComposedRelation",
         "attributes": {},
     },
     "RelationalTerm": {
         "score": 1,
         "type": "regular",
         "dsl": "RelationalTerm()",
-        "counterpart": "RelationalTerm",
+        "counterpart": "AtomicRelation",
         "attributes": {},
     },
     "NotExpression": {
-        "score": 0,
+        "score": 0.5,
         "type": "regular",
         "dsl": "NotExpression()",
-        "counterpart": None,
+        "counterpart": ("NOT", "Operator"),
         "attributes": {},
     },
     "BinaryExpression": {
-        "score": 1,
+        "score": 0,
         "type": "regular",
         "dsl": "BinaryExpression(BinaryOp binaryOp)",
-        "counterpart": "BooleanOperator",
-        "attributes": {
-            "BinaryOp binaryOp": {
-                "score": 1,
-                "counterpart": ("Operator operator", "BooleanOperator"),
-            }
-        },
+        "counterpart": None,
+        "attributes": {"BinaryOp binaryOp": {"score": 0, "counterpart": None}},
     },
     "CommandSequence": {
-        "score": 1,
+        "score": 0,
         "type": "regular",
         "dsl": "CommandSequence()",
-        "counterpart": "Action",
+        "counterpart": None,
         "attributes": {},
     },
 }

@@ -1,0 +1,80 @@
+Enumerations:
+DeviceState(activated,deactivated)
+CommandType(lockDoor,turnOnHeating,other)
+CommandStatus(requested,completed,failed,pending,other)
+State(activated,deactivated)
+BooleanOps(AND,OR,NOT)
+SensorType(mouvement,temperature,other)
+ActuatorType(light,lock,other)
+
+Classes:
+SHAS()
+SmartHome()
+User()
+Address( string street, string city, string country, int postalCode)
+Room()
+abstract Device( int deviceID, DeviceState state)
+Sensor( SensorType kind)
+Actuator( ActuatorType kind)
+ActivityLog()
+
+SensorReading( Double measuredValue, Time timeStamp)
+ControlCommand( Time timeStamp, CommandType commandType, CommandStatus commandStatus)
+
+AutomationRule( State ruleState)
+PreCondition()
+AtomicRelationalTerm( Room room, Sensor sensor, Actuator actuator, ControlCommand controlCommand, SensorReading sensorReading)
+
+
+BooleanRelationalTerm( BooleanOps operator)
+
+Action()
+
+
+
+Relationships:
+1 SHAS contain * SmartHome
+1 SHAS contain * User
+
+1 Address associate  1 SmartHome
+1 SmartHome contain  * Room 
+1 SmartHome contain 1 ActivityLog
+
+
+1 Room contain  * Device 
+
+
+1 ActivityLog associate  * SensorReading
+1 ActivityLog associate  * ControlCommand
+
+* SensorReading associate  1 Sensor 
+
+1 Actuator associate  * ControlCommand 
+
+1 AutomationRule contain 1 PreCondition
+1 AutomationRule contain 1  Action
+
+
+
+
+
+
+
+* BooleanRelationalTerm associate  1 PreCondition
+
+
+
+0..1 Action associate  * ControlCommand
+
+
+
+
+
+
+Sensor inherit  Device
+Actuator inherit  Device
+
+1 User contain * AutomationRule
+0..1 AutomationRule associate  * AutomationRule
+0..1 AutomationRule associate  * AutomationRule 
+* AtomicRelationalTerm associate  1 PreCondition

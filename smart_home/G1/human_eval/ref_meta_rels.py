@@ -61,6 +61,11 @@
         "counterpart": None,
     },
     {
+        "dsl": "* RelationalTerm associate 0..1  ControlCommand",
+        "score": 0,
+        "counterpart": None,
+    },
+    {
         "dsl": "0..1 NotExpression associate 1 BooleanExpression",
         "score": 0,
         "counterpart": None,

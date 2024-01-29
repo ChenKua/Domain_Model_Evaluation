@@ -1,58 +1,58 @@
 {
     "DeviceStatus": {
-        "score": 0,
+        "score": 1,
         "type": "enum",
         "dsl": "DeviceStatus(Activated, Deactivated)",
-        "counterpart": None,
+        "counterpart": "DeviceState",
         "attributes": {
-            "Activated": {"score": 0, "counterpart": None},
-            "Deactivated": {"score": 0, "counterpart": None},
+            "Activated": {"score": 1, "counterpart": ("activated", "DeviceState")},
+            "Deactivated": {"score": 1, "counterpart": ("deactivated", "DeviceState")},
         },
     },
     "CommandType": {
-        "score": 0,
+        "score": 1,
         "type": "enum",
         "dsl": "CommandType (lockDoor, turnOnHeating)",
-        "counterpart": None,
+        "counterpart": "CommandType",
         "attributes": {
-            "lockDoor": {"score": 0, "counterpart": None},
-            "turnOnHeating": {"score": 0, "counterpart": None},
+            "lockDoor": {"score": 1, "counterpart": ("lockDoor", "CommandType")},
+            "turnOnHeating": {
+                "score": 1,
+                "counterpart": ("turnOnHeating", "CommandType"),
+            },
         },
     },
     "CommandStatus": {
         "score": 1,
         "type": "enum",
         "dsl": "CommandStatus (Requested, Completed, Failed)",
-        "counterpart": "Status",
+        "counterpart": "CommandStatus",
         "attributes": {
-            "Requested": {"score": 1, "counterpart": ("Requested", "Status")},
-            "Completed": {"score": 1, "counterpart": ("Completed", "Status")},
-            "Failed": {"score": 1, "counterpart": ("Failed", "Status")},
+            "Requested": {"score": 1, "counterpart": ("requested", "CommandStatus")},
+            "Completed": {"score": 1, "counterpart": ("completed", "CommandStatus")},
+            "Failed": {"score": 1, "counterpart": ("failed", "CommandStatus")},
         },
     },
     "RuleStatus": {
-        "score": 0,
+        "score": 1,
         "type": "enum",
         "dsl": "RuleStatus (created, edited, activated, deactivated )",
-        "counterpart": None,
+        "counterpart": "State",
         "attributes": {
             "created": {"score": 0, "counterpart": None},
             "edited": {"score": 0, "counterpart": None},
-            "activated": {
-                "score": 0.5,
-                "counterpart": ("boolean activated", "AutomationRule"),
-            },
-            "deactivated": {"score": 0, "counterpart": None},
+            "activated": {"score": 1, "counterpart": ("activated", "State")},
+            "deactivated": {"score": 1, "counterpart": ("deactivated", "State")},
         },
     },
     "BinaryOp": {
         "score": 1,
         "type": "enum",
         "dsl": "BinaryOp (AND, OR )",
-        "counterpart": "Operator",
+        "counterpart": "BooleanOps",
         "attributes": {
-            "AND": {"score": 1, "counterpart": ("and", "Operator")},
-            "OR": {"score": 1, "counterpart": ("or", "Operator")},
+            "AND": {"score": 1, "counterpart": ("AND", "BooleanOps")},
+            "OR": {"score": 1, "counterpart": ("OR", "BooleanOps")},
         },
     },
     "SHAS": {
@@ -77,26 +77,20 @@
         "attributes": {"string name": {"score": 0, "counterpart": None}},
     },
     "Address": {
-        "score": 0,
+        "score": 1,
         "type": "regular",
         "dsl": "Address(string city, string postalCode, string street, string aptNumber)",
-        "counterpart": None,
+        "counterpart": "Address",
         "attributes": {
-            "string city": {
-                "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
-            },
+            "string city": {"score": 1, "counterpart": ("string city", "Address")},
             "string postalCode": {
-                "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
+                "score": 1,
+                "counterpart": ("int postalCode", "Address"),
             },
-            "string street": {
-                "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
-            },
+            "string street": {"score": 1, "counterpart": ("string street", "Address")},
             "string aptNumber": {
-                "score": 0.5,
-                "counterpart": ("string address", "SmartHome"),
+                "score": 1,
+                "counterpart": ("string country", "Address"),
             },
         },
     },
@@ -113,8 +107,14 @@
         "dsl": "abstract Device(DeviceStatus deviceStatus, int deviceID)",
         "counterpart": "abstract Device",
         "attributes": {
-            "DeviceStatus deviceStatus": {"score": 0, "counterpart": None},
-            "int deviceID": {"score": 1, "counterpart": ("int id", "abstract Device")},
+            "DeviceStatus deviceStatus": {
+                "score": 1,
+                "counterpart": ("DeviceState state", "abstract Device"),
+            },
+            "int deviceID": {
+                "score": 1,
+                "counterpart": ("int deviceID", "abstract Device"),
+            },
         },
     },
     "SensorDevice": {
@@ -139,14 +139,14 @@
         "attributes": {},
     },
     "abstract RuntimeElement": {
-        "score": 1,
+        "score": 0,
         "type": "abstract",
         "dsl": "abstract RuntimeElement(time timestamp)",
-        "counterpart": "abstract Dependency",
+        "counterpart": None,
         "attributes": {
             "time timestamp": {
                 "score": 0.5,
-                "counterpart": ("DateTime timestamp", "SensorReading"),
+                "counterpart": ("Time timeStamp", "ControlCommand"),
             }
         },
     },
@@ -158,7 +158,7 @@
         "attributes": {
             "double value": {
                 "score": 1,
-                "counterpart": ("int measuredValue", "SensorReading"),
+                "counterpart": ("Double measuredValue", "SensorReading"),
             }
         },
     },
@@ -168,10 +168,13 @@
         "dsl": "ControlCommand (CommandType commandType, CommandStatus commandStatus)",
         "counterpart": "ControlCommand",
         "attributes": {
-            "CommandType commandType": {"score": 0, "counterpart": None},
+            "CommandType commandType": {
+                "score": 1,
+                "counterpart": ("CommandType commandType", "ControlCommand"),
+            },
             "CommandStatus commandStatus": {
                 "score": 1,
-                "counterpart": ("Status status", "ControlCommand"),
+                "counterpart": ("CommandStatus commandStatus", "ControlCommand"),
             },
         },
     },
@@ -180,38 +183,43 @@
         "type": "regular",
         "dsl": "AlertRule (RuleStatus ruleStatus)",
         "counterpart": "AutomationRule",
-        "attributes": {"RuleStatus ruleStatus": {"score": 0, "counterpart": None}},
+        "attributes": {
+            "RuleStatus ruleStatus": {
+                "score": 1,
+                "counterpart": ("State ruleState", "AutomationRule"),
+            }
+        },
     },
     "abstract BooleanExpression": {
         "score": 0.5,
         "type": "abstract",
         "dsl": "abstract BooleanExpression()",
-        "counterpart": "Precondition",
+        "counterpart": "PreCondition",
         "attributes": {},
     },
     "RelationalTerm": {
         "score": 1,
         "type": "regular",
         "dsl": "RelationalTerm()",
-        "counterpart": "RelationalTerm",
+        "counterpart": "AtomicRelationalTerm",
         "attributes": {},
     },
     "NotExpression": {
-        "score": 0,
+        "score": 0.5,
         "type": "regular",
         "dsl": "NotExpression()",
-        "counterpart": None,
+        "counterpart": ("NOT", "BooleanOps"),
         "attributes": {},
     },
     "BinaryExpression": {
         "score": 1,
         "type": "regular",
         "dsl": "BinaryExpression(BinaryOp binaryOp)",
-        "counterpart": "BooleanOperator",
+        "counterpart": "BooleanRelationalTerm",
         "attributes": {
             "BinaryOp binaryOp": {
                 "score": 1,
-                "counterpart": ("Operator operator", "BooleanOperator"),
+                "counterpart": ("BooleanOps operator", "BooleanRelationalTerm"),
             }
         },
     },

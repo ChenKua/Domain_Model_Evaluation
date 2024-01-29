@@ -1,0 +1,111 @@
+class SHAS
+{
+}
+class SmartHome
+{
+  1 home <@>- * Room roomInHome;
+  * homes -<@> 1 SHAS system;
+}
+
+class Adress 
+{ //adress of chosen home
+  1 adressOf -- 1 SmartHome home;
+  street;
+  city;
+  country;
+  int postalCode;
+}
+
+class User
+{
+  * users -<@> 1 SHAS;
+}
+
+class Room 
+{ //unit conaining devices
+  1 room <@>- * Device devices;
+}
+
+class Device
+{ //abstract class for Sensor and Actuator
+  int deviceID;
+  enum DeviceState{activated,deactivated};
+  DeviceState state;
+  abstract;
+}
+
+class Sensor
+{
+  SensorType kind;
+  isA Device;
+  enum SensorType{mouvement,temperature,other}; //there could be other sensor types that i do not know of
+}
+
+class Actuator
+{
+  ActuatorType kind;
+  isA Device;
+  1 actuatorDevice -- * ControlCommand controlCommand;
+  enum ActuatorType{light,lock,other}; //there could be other types of actuators that i do not know of
+}
+
+class SensorReading
+{
+  * readings -- 1 Sensor sensorDevice; //readings of 1 sensor device
+  Double measuredValue;
+  Time timeStamp;
+}
+
+class AutomationRule
+{
+  * rule -<@> 1 User user;
+  enum State{activated,deactivated};
+    State ruleState;
+	//reflexice associations for complex hierarchy within automation rules
+  0..1 rule1 -- * AutomationRule dependantRule;
+  0..1 rule2 -- * AutomationRule conflictRule;
+}
+
+class ControlCommand
+{
+  Time timeStamp;
+  enum CommandType{lockDoor,turnOnHeating,other}; //other types of predefined commands exist
+  enum CommandStatus{requested,completed,failed,pending,other}; //there could be other command statuses
+  CommandType commandType; 
+  CommandStatus commandStatus;
+}
+
+class ActivityLog
+{
+  1 activityLog -<@> 1 SmartHome;
+  1 -- * SensorReading readings;
+  1 -- * ControlCommand commands;
+}
+
+class PreCondition
+{
+  1 preCondition -<@> 1 AutomationRule rule; //automation rule uses precondition
+}
+
+class Action
+{
+  1 action -<@> 1 AutomationRule rule;
+  0..1 sequenceOf -> * ControlCommand commands; //action is formed using a sequence of commands
+}
+
+class AtomicRelationalTerm
+{
+  Room room;
+  Sensor sensor;
+  Actuator actuator;
+  ControlCommand controlCommand;
+  SensorReading sensorReading;
+  * partOf -- 1 PreCondition preCondition; //precondition is formed using AtomicRelationalTerms
+}
+
+class BooleanRelationalTerm  
+{
+  * -- 1 PreCondition;
+  enum BooleanOps{AND,OR,NOT}; //these are used to form the precondition
+  BooleanOps operator;
+}

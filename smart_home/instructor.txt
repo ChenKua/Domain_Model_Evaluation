@@ -57,7 +57,7 @@ Relationships:
 * RelationalTerm associate 0..1  Room
 * RelationalTerm associate 0..1  Device
 * RelationalTerm associate 0..1  RuntimeElement
-
+* RelationalTerm associate 0..1  ControlCommand
 0..1 NotExpression associate 1 BooleanExpression
 
 0..1 BinaryExpression associate 1 BooleanExpression

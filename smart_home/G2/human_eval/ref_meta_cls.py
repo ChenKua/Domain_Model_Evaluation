@@ -53,8 +53,8 @@
         "attributes": {"string name": {"score": 0, "counterpart": None}},
     },
     "Address": {
-        "score": 0.5,
-        "counterpart": ("string address", "SmartHome"),
+        "score": 0,
+        "counterpart": None,
         "attributes": {
             "string city": {
                 "score": 0.5,
