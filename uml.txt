@@ -1,111 +1,114 @@
 class SHAS
 {
-}
-class SmartHome
-{
-  1 home <@>- * Room roomInHome;
-  * homes -<@> 1 SHAS system;
-}
-
-class Adress 
-{ //adress of chosen home
-  1 adressOf -- 1 SmartHome home;
-  street;
-  city;
-  country;
-  int postalCode;
-}
-
-class User
-{
-  * users -<@> 1 SHAS;
-}
-
-class Room 
-{ //unit conaining devices
-  1 room <@>- * Device devices;
-}
-
-class Device
-{ //abstract class for Sensor and Actuator
-  int deviceID;
-  enum DeviceState{activated,deactivated};
-  DeviceState state;
-  abstract;
-}
-
-class Sensor
-{
-  SensorType kind;
-  isA Device;
-  enum SensorType{mouvement,temperature,other}; //there could be other sensor types that i do not know of
-}
-
-class Actuator
-{
-  ActuatorType kind;
-  isA Device;
-  1 actuatorDevice -- * ControlCommand controlCommand;
-  enum ActuatorType{light,lock,other}; //there could be other types of actuators that i do not know of
-}
-
-class SensorReading
-{
-  * readings -- 1 Sensor sensorDevice; //readings of 1 sensor device
-  Double measuredValue;
-  Time timeStamp;
-}
-
-class AutomationRule
-{
-  * rule -<@> 1 User user;
-  enum State{activated,deactivated};
-    State ruleState;
-	//reflexice associations for complex hierarchy within automation rules
-  0..1 rule1 -- * AutomationRule dependantRule;
-  0..1 rule2 -- * AutomationRule conflictRule;
-}
-
-class ControlCommand
-{
-  Time timeStamp;
-  enum CommandType{lockDoor,turnOnHeating,other}; //other types of predefined commands exist
-  enum CommandStatus{requested,completed,failed,pending,other}; //there could be other command statuses
-  CommandType commandType; 
-  CommandStatus commandStatus;
+	1 <@>- 1..* Room rooms;
+	1 <@>- 1 ActivityLog log;
+	1 <@>- * AutomationRule allRules;
+	// subset of allRules
+	1 -> * AutomationRule activeRules;
+	// When editing rules, can only retrieve from this set
+	// subset of allRules but intersection with activerules = null
+	1 -> * AutomationRule inactiveRules; 
 }
 
 class ActivityLog
 {
-  1 activityLog -<@> 1 SmartHome;
-  1 -- * SensorReading readings;
-  1 -- * ControlCommand commands;
+	// Maybe composition with SHAS and simple association here?
+	1 <@>- * SensorReading sensorReadings;
+	1 <@>- * ActuatorCommand commands;
 }
 
-class PreCondition
+// This abstract interface is used for all physical elements of the SHAS
+// so that they can be easily referred to by the automation rules as "Elements" of the SHAS.
+class Element
 {
-  1 preCondition -<@> 1 AutomationRule rule; //automation rule uses precondition
 }
 
-class Action
+class Room
 {
-  1 action -<@> 1 AutomationRule rule;
-  0..1 sequenceOf -> * ControlCommand commands; //action is formed using a sequence of commands
+	isA Element;
+	1 <@>- * Device devices;
 }
 
-class AtomicRelationalTerm
+class Device
 {
-  Room room;
-  Sensor sensor;
-  Actuator actuator;
-  ControlCommand controlCommand;
-  SensorReading sensorReading;
-  * partOf -- 1 PreCondition preCondition; //precondition is formed using AtomicRelationalTerms
+	isA Element;
+	autounique identifier;
+	Boolean isActive;
 }
 
-class BooleanRelationalTerm  
+class Sensor
 {
-  * -- 1 PreCondition;
-  enum BooleanOps{AND,OR,NOT}; //these are used to form the precondition
-  BooleanOps operator;
+	isA Device;
+	enum SensorType { Temperature, Movement };
+	SensorType type;
+	
+	1 -- * SensorReading readings;
+}
+
+class SensorReading
+{
+	isA Element;
+	Double reading;
+	Time timestamp;
+	String readingType;
+}
+
+class Actuator
+{
+	isA Device;
+	enum ActuatorType { Light, Lock };
+	ActuatorType type;
+	
+	1 -- * ActuatorCommand commands;
+}
+
+class ActuatorCommand
+{
+	isA Element;
+	enum CommandType { LockDoor, TurnOnHeating, TurnOnLights };
+	CommandType type;
+	Time timestamp;
+	enum CommandStatus { Requested, Completed, Failed };
+	CommandStatus status;
+}
+
+// Dealing with the automation rules:
+
+class AtomicTerm
+{
+	String expression;
+	1 -- 1..* Element refersTo;
+	Boolean atomicValue;
+}
+
+class Relation
+{
+	enum Operator { AND, OR, NOT};
+	Operator op;
+	1 -> 1 AtomicTerm LHS;
+	// 0..1 in case of NOT, this should be ignored
+	1 -> 0..1 AtomicTerm RHS;
+	Boolean value;
+}
+
+class Precondition
+{
+	1 -> 1..* Relation relations;
+	
+	// Some parser will parse the relations (and atomic terms) and determine the final value of the precondition
+	Boolean value;
+}
+
+class AutomationRule
+{
+	// Use a separate instance of a precondition for each automationrule.
+	1 -- 1 Precondition precondition;
+	1 -- * ActuatorCommand actionSequence;
+	Boolean isActive;
+	
+	1 -> * AutomationRule dependsOn;
+	1 -> * AutomationRule conflictsWith;
+	
+	// "SHAS records whenever a rule was triggered using a timestamp"
+	Time[] activations;
 }

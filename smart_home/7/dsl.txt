@@ -1,0 +1,80 @@
+Enumerations:
+
+
+
+Status (Created, Edited, Activated, Deactivated)
+OperatorType ( AND, NOT, OR)
+TermType ( Rooms, Sensors, Actuators, SensorReadings, ControlCommands)
+
+
+
+Classes:
+SHAS()
+SmartHome( address)
+Owner()
+
+Room()
+Device( String identifier, Boolean active)
+Sensor()
+Actuator()
+ActivityLog()
+
+SensorReading( Double measureValue, Time timeStamp)
+ControlCommand( String status, Time timeStamp, String command)
+AutomationRule( Status status)
+Precondition()
+RelationalTerm( TermType termType)
+
+
+BooleanOperator( OperatorType operatorType)
+Action()
+
+
+
+Relationships:
+1 SHAS contain  1 SmartHome
+
+
+
+
+
+1 SmartHome contain  1..* Room
+1 SHAS contain  1  ActivityLog
+
+
+
+1 Room associate  0..* Device 
+
+
+
+
+
+* SensorReading associate  1 Sensor
+
+* Actuator associate  *  ControlCommand
+
+1 Precondition associate  1 AutomationRule
+1 Action associate  1 AutomationRule
+
+
+
+
+
+
+* RelationalTerm associate  * Precondition
+
+* BooleanOperator associate  * Precondition
+
+
+
+* ControlCommand associate  1 Action
+
+
+
+
+
+
+Sensor inherit  Device
+Actuator inherit  Device
+
+1 Owner associate  * AutomationRule

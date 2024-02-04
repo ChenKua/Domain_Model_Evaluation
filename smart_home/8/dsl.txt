@@ -1,0 +1,86 @@
+Enumerations:
+
+CommandType ( LockDoor, TurnOnHeating, TurnOnLights )
+CommandStatus ( Requested, Completed, Failed )
+
+Operator ( AND, OR, NOT)
+SensorType ( Temperature, Movement )
+ActuatorType ( Light, Lock )
+
+
+Classes:
+SHAS()
+
+
+
+Room()
+Device( auto unique identifier, Boolean isActive)
+Sensor( SensorType type)
+Actuator( ActuatorType type)
+ActivityLog()
+Element()
+SensorReading( Double reading, Time timestamp, String readingType)
+ActuatorCommand( CommandType type, Time timestamp, CommandStatus status)
+AutomationRule( Boolean isActive, Time activations)
+Precondition( Boolean value)
+AtomicTerm( String expression, Boolean atomicValue)
+
+
+Relation( Operator op, Boolean value)
+
+
+
+
+Relationships:
+
+
+1 SHAS contain  1..* Room 
+1 SHAS contain  1 ActivityLog 
+1 SHAS contain  * AutomationRule
+1 SHAS associate  * AutomationRule
+
+
+
+
+
+
+
+1 Room contain  * Device
+
+
+1 ActivityLog contain  * SensorReading
+1 ActivityLog contain  * ActuatorCommand 
+
+1 Sensor associate  * SensorReading
+
+1 Actuator associate  * ActuatorCommand
+
+1 AutomationRule associate  1 Precondition
+
+1 AutomationRule associate  * ActuatorCommand
+
+
+
+1 AtomicTerm associate  1..* Element
+
+
+
+1 Precondition associate  1..* Relation
+
+
+
+
+
+SensorReading inherit  Element
+ActuatorCommand inherit  Element
+
+
+
+Sensor inherit  Device
+Actuator inherit  Device
+Room inherit  Element
+Device inherit  Element
+1 Relation associate  1 AtomicTerm
+1 Relation associate  0..1 AtomicTerm
+1 AutomationRule associate  * AutomationRule
+1 AutomationRule associate  * AutomationRule
