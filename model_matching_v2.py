@@ -1,21 +1,23 @@
 # %% [markdown]
 # # Set up
 
-import ast
-import json
-import os
-
 # %%
 import pickle
+
+import ast
+import pandas as pd
+import numpy as np
+
+from worde4mde import load_embeddings
 import re
-import sys
+
+import os
+import openai
+from openai import OpenAI
+import json
 
 import networkx as nx
-import numpy as np
-import openai
-import pandas as pd
-from openai import OpenAI
-from worde4mde import load_embeddings
+import sys
 
 # %%
 
@@ -25,14 +27,17 @@ os.environ["OPENAI_API_KEY"] = openai_key
 
 openai.api_key = openai_key
 
+# %% [markdown]
+# ## Input
+
+# %%
 # %%
 if len(sys.argv) != 2:
-    print("Usage: python script_name.py arg1 arg2")
+    print("Usage: python script_name.py arg1")
     sys.exit(1)
 
 g = sys.argv[1]
 print("group:", g)
-
 
 # %%
 instructor_dir = "smart_home/"
@@ -47,7 +52,7 @@ student_out_dir
 # %%
 # First of all, you need to load the embeddings (currently supported: 'sgram-mde' and 'glove-mde')
 sgram_mde = load_embeddings("sgram-mde")
-glove = load_embeddings("glove-mde")
+# glove = load_embeddings('glove-mde')
 # sgram_mde["id"]
 
 # %%
@@ -72,6 +77,9 @@ def splitCamelCase(word):
 
 
 splitCamelCase("device ID")
+
+# %%
+splitCamelCase("CommandStatus")
 
 # %%
 client = OpenAI()
@@ -116,7 +124,7 @@ def get_all_info(class_index, class_nodes, list_of_classes, list_edges, need_edg
 
 
 # %%
-def map_classes(raw_1, raw_2, dict_attr, thresh=0.45):
+def map_classes(raw_1, raw_2, dict_attr, thresh=0.5, verbose=False):
     # raw_1: nodes from reference solution
     # raw_2: nodes from student solution
     # dict_attr: dictionary for embeddings
@@ -403,9 +411,16 @@ edges = [ref_edges_obj, stu_edges_obj]
 
 
 # %%
+def removeChars(text, chars):
+    for c in chars:
+        text = text.replace(c, "")
+    return text
+
+
+# %%
 def get_mde_embedding(text, embedding):
     # >>> get_mde_embedding("WhatDevice", sgram_mde)
-    words = splitCamelCase(text)
+    words = splitCamelCase(removeChars(text, ["(", ")", ","]))
     lowercase_list = [s.lower() for s in words]
     counter = 0
     emb = np.zeros(300)
@@ -424,77 +439,14 @@ def get_mde_embedding(text, embedding):
 
 
 # %%
+text = "AutomationStatus (Created, Edited, Activated, Deactivated)"
+words = splitCamelCase(removeChars(text, ["(", ")", ","]))
+words
+
+
+# %%
 def cosine_distance(emb_i, emb_j):
     return np.dot(emb_i, emb_j) / (np.linalg.norm(emb_i) * np.linalg.norm(emb_j))
-
-
-# %%
-# # all info
-# similarity_all_g2 = []
-# similarity_mde = []
-
-# mde_embedding = sgram_mde
-
-# for index, node in enumerate(reference_class):
-
-#   text_1 = get_all_info(index, reference_class, ref_classes_raw, ref_edges, False)
-
-#   emb_i = get_embedding(text_1)
-
-#   cls = node.split()[-1].strip() # get the class name, remove abstract key word
-#   mde_emb_i = get_mde_embedding(cls, mde_embedding)
-
-#   pair = []
-#   mde_pair = []
-#   for j, stu_node in enumerate(stu_class):
-
-#     text_2 = get_all_info(j, stu_class, stu_classes_raw, stu_edges, False)
-#     emb_j = get_embedding(text_2)
-#     sim = cosine_distance(emb_i, emb_j)
-
-#     cls = stu_node.split()[-1].strip() # get the class name, remove abstract key word
-#     mde_emb_j = get_mde_embedding(cls, mde_embedding)
-
-#     mde_sim = cosine_distance(mde_emb_i, mde_emb_j)
-
-#     pair.append(sim)
-#     mde_pair.append(mde_sim)
-
-#   # apply third quartile
-#   similarity_all_g2.append(pair)
-#   similarity_mde.append(mde_pair)
-
-
-# %%
-
-# similarity_all_g2_np = np.array(similarity_all_g2)
-# similarity_mde_np = np.array(similarity_mde)
-
-# similarity_all_np = 1 * similarity_all_g2_np + 0.0 * similarity_mde_np
-
-# %%
-# row_percentiles = np.percentile(similarity_all_np,90, axis=1)
-# row_percentiles = row_percentiles[:, np.newaxis]
-# row_percentiles = np.repeat(row_percentiles, 24, axis = 1)
-
-# %%
-# similarity_all_np = np.where(similarity_all_np < row_percentiles,
-#                              -2,
-#                              similarity_all_np)
-
-# %%
-# import pandas as pd
-
-# df = pd.DataFrame(index=reference_class, columns=stu_class, data=similarity_all_np)
-# df
-
-# %%
-# dict_sim_all_g2 = {}
-
-# for i in range(len(reference_class)):
-#   dict_sim_all_g2[reference_class[i]] = {}
-#   for j in range(len(stu_class)):
-#     dict_sim_all_g2[reference_class[i]][stu_class[j]] = similarity_all_np[i][j]
 
 
 # %% [markdown]
@@ -506,10 +458,13 @@ def cosine_distance(emb_i, emb_j):
 similarity_mde = []
 mde_embedding = sgram_mde
 threshold = 0.7
-
+similarity_mde_dsl = []
+percentage = 0.8
 for index, node in enumerate(ref_cls.cls_name):
     cls = node.split()[-1].strip()  # get the class name, remove abstract key word
     mde_emb_i = get_mde_embedding(cls, mde_embedding)
+    mde_emb_i_dsl = get_mde_embedding(ref_cls.cls_atr[node]["dsl"], mde_embedding)
+
     pair = []
     mde_pair = []
     for j, stu_node in enumerate(stu_cls.cls_name):
@@ -517,8 +472,14 @@ for index, node in enumerate(ref_cls.cls_name):
             -1
         ].strip()  # get the class name, remove abstract key word
         mde_emb_j = get_mde_embedding(cls, mde_embedding)
+        mde_emb_j_dsl = get_mde_embedding(
+            stu_cls.cls_atr[stu_node]["dsl"], mde_embedding
+        )
+
         mde_sim = cosine_distance(mde_emb_i, mde_emb_j)
-        mde_pair.append(mde_sim)
+        mde_sim_dsl = cosine_distance(mde_emb_i_dsl, mde_emb_j_dsl)
+
+        mde_pair.append(mde_sim * percentage + (1 - percentage) * mde_sim_dsl)
 
     # apply third quartile
     similarity_mde.append(mde_pair)
@@ -530,10 +491,35 @@ for i in range(len(ref_cls.cls_name)):
         dict_sim_word[ref_cls.cls_name[i]][stu_cls.cls_name[j]] = similarity_mde[i][j]
 
 # %%
-# import pandas as pd
+for key in dict_sim_word:
+    exact_match = False
+    exact_cls = ""
+    for cls_2 in dict_sim_word[key]:
+        if dict_sim_word[key][cls_2] > 0.99:
+            exact_match = True
+            exact_cls = cls_2
+            print(cls_2)
+            break
 
-# df = pd.DataFrame(index=reference_class, columns=stu_class, data=similarity_mde)
-# df
+    if exact_match:  # keep the exact match, others to 0
+        print("update")
+        for cls_2 in dict_sim_word[key]:
+            if cls_2 != exact_cls:
+                dict_sim_word[key][cls_2] = 0
+
+similarity_mde = []
+for i in dict_sim_word:
+    tmp = []
+    for j in dict_sim_word[i]:
+        tmp.append(dict_sim_word[i][j])
+
+    similarity_mde.append(tmp)
+
+# %%
+import pandas as pd
+
+df = pd.DataFrame(index=reference_class, columns=stu_class, data=similarity_mde)
+df
 
 # %% [markdown]
 # ### Stage 1.1.1 Mapping (enum / regular + abstract)
@@ -605,28 +591,44 @@ similarity_all = []
 mde_embedding = sgram_mde
 threshold = 0.7
 
-for index, node in enumerate(ref_cls.cls_name):
-    text_1 = get_all_info(
-        index, ref_cls.cls_name, ref_cls.raw_dsl, ref_cls.rel.raw_dsl, True
-    )
-    emb_i = get_embedding(text_1)
-    mde_pair = []
-    for j, stu_node in enumerate(stu_cls.cls_name):
-        text_2 = get_all_info(
-            j, stu_cls.cls_name, stu_cls.raw_dsl, stu_cls.rel.raw_dsl, True
+
+if os.path.exists(student_dir + "ada_embedding.txt"):
+    with open(student_dir + "ada_embedding.txt", "r") as json_file:
+        dict_sim_all = json.load(json_file)
+
+else:
+    for index, node in enumerate(ref_cls.cls_name):
+        text_1 = get_all_info(
+            index, ref_cls.cls_name, ref_cls.raw_dsl, ref_cls.rel.raw_dsl, True
         )
-        emb_j = get_embedding(text_2)
-        mde_sim = cosine_distance(emb_i, emb_j)
-        mde_pair.append(mde_sim)
+        emb_i = get_embedding(text_1)
+        mde_pair = []
+        for j, stu_node in enumerate(stu_cls.cls_name):
+            text_2 = get_all_info(
+                j, stu_cls.cls_name, stu_cls.raw_dsl, stu_cls.rel.raw_dsl, True
+            )
+            emb_j = get_embedding(text_2)
+            mde_sim = cosine_distance(emb_i, emb_j)
+            mde_pair.append(mde_sim)
 
-    # apply third quartile
-    similarity_all.append(mde_pair)
+        # apply third quartile
+        similarity_all.append(mde_pair)
 
-dict_sim_all = {}
-for i in range(len(ref_cls.cls_name)):
-    dict_sim_all[ref_cls.cls_name[i]] = {}
-    for j in range(len(stu_cls.cls_name)):
-        dict_sim_all[ref_cls.cls_name[i]][stu_cls.cls_name[j]] = similarity_all[i][j]
+    dict_sim_all = {}
+    for i in range(len(ref_cls.cls_name)):
+        dict_sim_all[ref_cls.cls_name[i]] = {}
+        for j in range(len(stu_cls.cls_name)):
+            dict_sim_all[ref_cls.cls_name[i]][stu_cls.cls_name[j]] = similarity_all[i][
+                j
+            ]
+
+
+# %%
+with open(student_dir + "ada_embedding.txt", "w") as json_file:
+    json.dump(dict_sim_all, json_file)
+
+# %%
+student_dir
 
 # %%
 mapping = map_classes(ref_classes, stu_classes, dict_sim_all, 0.8)
@@ -892,6 +894,7 @@ for mapping in mappings:
         scores = check_attributes_type(
             mapping[0][0], mapping[1][0], ref_cls.cls_atr, stu_cls.cls_atr
         )
+
         ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]]["score"] = min(
             scores[0], 0.5
         )
@@ -906,13 +909,15 @@ for mapping in mappings:
             "counterpart"
         ] = mapping[0]
 
+        if ref_cls.cls_atr[mapping[0][1]]["counterpart"] == mapping[1][1]:
+            ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]]["score"] = min(
+                scores[0], 1
+            )
+
+            stu_cls.cls_atr[mapping[1][1]]["attributes"][mapping[1][0]]["score"] = min(
+                scores[1], 1
+            )
 print("=" * 20)
-
-# %%
-stu_cls.cls_atr["SmartHome"]
-
-# %%
-ref_cls.cls_atr["Address"]
 
 # %% [markdown]
 # ## Stage 2.2.1 Attribute mapping atr -> cls
@@ -1000,16 +1005,20 @@ for mapping in mappings:
     print(mapping)
     if mapping[0] != None and mapping[1] != None:
         # scores = check_attributes_type(mapping[0][0], mapping[1][0], ref_cls.cls_atr, stu_cls.cls_atr)
-        ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]]["score"] = 0.5
-        ref_cls.cls_atr[mapping[0][1]]["attributes"][mapping[0][0]][
-            "counterpart"
-        ] = mapping[1]
+        ref_cls.cls_atr[mapping[0][1]]["score"] = 0.5
+        ref_cls.cls_atr[mapping[0][1]]["counterpart"] = mapping[1]
 
-        stu_cls.cls_atr[mapping[1][1]]["score"] = 0.5
-        stu_cls.cls_atr[mapping[1][1]]["counterpart"] = (None, mapping[0][1])
+        stu_cls.cls_atr[mapping[1][1]]["attributes"][mapping[1][0]]["score"] = 0.5
+        stu_cls.cls_atr[mapping[1][1]]["attributes"][mapping[1][0]]["counterpart"] = (
+            None,
+            mapping[0][1],
+        )
 
 print("=" * 20)
 
+
+# %%
+ref_cls.cls_atr["NotExpression"]
 
 # %% [markdown]
 # ## Stage 3: Relationship mapping
@@ -1030,7 +1039,9 @@ def check_relations_classes(ref_index, stu_index, ref_elements, stu_elements):
         ref_class_1 = abstract
 
     true_pair = ref_attributes[ref_class_1]["counterpart"]
-    if true_pair == None:
+    if isinstance(true_pair, tuple):
+        boolean_1 = False
+    elif true_pair == None:
         boolean_1 = False
     else:
         tmp = true_pair.replace("abstract ", "")
@@ -1088,28 +1099,16 @@ def compare_edges(ref_e, stu_e):
 
             # association
             boolean_3 = ref_elements[3] == stu_elements[0]
-            # boolean_1_4 = check_relations_classes(1,4,ref_elements,stu_elements )
-            # boolean_4_1 = check_relations_classes(4,1,ref_elements,stu_elements )
 
-        if boolean_0 and boolean_1_4 and boolean_3 and boolean_4_1:
+        if boolean_0 and boolean_1_4 and boolean_3 and boolean_4_1 and boolean_2:
             print("match success, flipped associate")
             print(ref_e, "|||", stu_e)
-            # ref_dict[ref_e]["score"] = 1
-            # ref_dict[ref_e]["counterpart"] = stu_e
-
-            # stu_dict[stu_e]["score"] = 1
-            # stu_dict[stu_e]["counterpart"] = ref_e
             return True, 1, 1
 
         # check if relationship is partially match
         if (boolean_1 and boolean_4) or (boolean_1_4 and boolean_4_1):
             print("match partially success")
             print(ref_e, "|||", stu_e)
-            # ref_dict[ref_e]["score"] = 0.5
-            # ref_dict[ref_e]["counterpart"] = stu_e
-
-            # stu_dict[stu_e]["score"] = 0.5
-            # stu_dict[stu_e]["counterpart"] = ref_e
             return True, 0.5, 0.5
 
     if n_ref == n_stu and n_ref == 3:
@@ -1134,9 +1133,7 @@ def compare_edges(ref_e, stu_e):
 
 
 # %%
-compare_edges(
-    "BinaryExpression inherit BooleanExpression", "* ControlCommand associate * Action"
-)
+compare_edges("1 SmartHome contain 0..1 ActivityLog", "1 SHAS contain 1  ActivityLog")
 
 # %%
 matched_stu_edges = set()
@@ -1172,6 +1169,9 @@ with open(student_out_dir + "matching.pkl", "wb") as outp:
     pickle.dump(grader, outp, pickle.HIGHEST_PROTOCOL)
 
 # %%
+student_out_dir
+
+# %%
 
 
 # as requested in comment
@@ -1191,23 +1191,21 @@ with open(student_out_dir + "student_matching_relationship.txt", "w") as file:
     file.write(json.dumps(grader.stu.rel.rels))
 
 # %%
-
-
-# # as requested in comment
+# # # be careful...
 
 # with open(student_dir + "human_eval/" + 'ref_meta_cls.py', 'w') as file:
-#      file.write(json.dumps(grader.ref.cls_atr))
+#     file.write(json.dumps(grader.ref.cls_atr))
 
 
 # with open(student_dir + "human_eval/" + 'stu_meta_cls.py', 'w') as file:
-#      file.write(json.dumps(grader.stu.cls_atr))
+#     file.write(json.dumps(grader.stu.cls_atr))
 
 # with open(student_dir + "human_eval/" + 'ref_meta_rels.py', 'w') as file:
-#      file.write(json.dumps(grader.ref.rel.rels))
+#     file.write(json.dumps(grader.ref.rel.rels))
 
 
 # with open(student_dir + "human_eval/" + 'stu_meta_rels.py', 'w') as file:
-#      file.write(json.dumps(grader.stu.rel.rels))
+#     file.write(json.dumps(grader.stu.rel.rels))
 
 # %%
 algo_result = {}
@@ -1364,415 +1362,6 @@ with open(student_dir + "human_eval/" + "stu_meta_rels.py", "r") as file:
     group.stu_rels = stu_rel_human
 
 # %% [markdown]
-# ### class
-
-# %%
-# # human matching
-# ref_cls_human = {'DeviceStatus': {'score': 1,
-#   'counterpart': 'DeviceStatus',
-#   'attributes': {'Activated': {'score': 1,
-#     'counterpart': ('Activated', 'DeviceStatus')},
-#    'Deactivated': {'score': 1,
-#     'counterpart': ('Deactivated', 'DeviceStatus')}}},
-#                  # checked above
-#  'CommandType': {'score': 1,
-#   'counterpart': 'ControlCommand',
-#   'attributes': {'lockDoor': {'score': 1,
-#     'counterpart': ('LockDoor', 'ControlCommand')},
-#    'turnOnHeating': {'score': 1,
-#     'counterpart': ('TurnOnHeating', 'ControlCommand')}}},
-#                  # checked above
-#  'CommandStatus': {'score': 1,
-#   'counterpart': 'Status',
-#   'attributes': {'Requested': {'score': 1,
-#     'counterpart': ('Requested', 'Status')},
-#    'Completed': {'score': 1, 'counterpart': ('Completed', 'Status')},
-#    'Failed': {'score': 1, 'counterpart': ('Failed', 'Status')}}},
-#                  # checked above
-#  'RuleStatus': {'score': 1,
-#   'counterpart': 'RuleStatus',
-#   'attributes': {'created': {'score': 1,
-#     'counterpart': ('Created', 'RuleStatus')},
-#    'edited': {'score': 1, 'counterpart': ('Edited', 'RuleStatus')},
-#    'activated': {'score': 1, 'counterpart': ('Activated', 'RuleStatus')},
-#    'deactivated': {'score': 1, 'counterpart': ('Deactivated', 'RuleStatus')}}},
-#                  # checked above
-#  'BinaryOp': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'AND': {'score': 0, 'counterpart': None},
-#    'OR': {'score': 0, 'counterpart': None}}},
-#                  # checked above
-#  'SHAS': {'score': 1, 'counterpart': 'SHAS', 'attributes': {}},
-#                  # checked above
-#  'SmartHome': {'score': 1, 'counterpart': 'SmartHome', 'attributes': {}},
-#                  # checked above
-#  'User': {'score': 1,
-#   'counterpart': 'User',
-#   'attributes': {'string name': {'score': 0,
-#     'counterpart': None}}},
-#                  # checked above
-#  'Address': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'string city': {'score': 0.5,
-#     'counterpart': ('string address', 'SmartHome')},
-#    'string postalCode': {'score': 0, 'counterpart': None},
-#    'string street': {'score': 0, 'counterpart': None},
-#    'string aptNumber': {'score': 0, 'counterpart': None}}},
-#                  # checked above
-#  'Room': {'score': 1, 'counterpart': 'Room', 'attributes': {}},
-#                  # checked above
-#  'abstract Device': {'score': 0.5,
-#   'counterpart': 'Device',
-#   'attributes': {'DeviceStatus deviceStatus': {'score': 0.5,
-#     'counterpart': ('DeviceStatus deviceStatus', 'ChangeInState')},
-#    'int deviceID': {'score': 1,
-#     'counterpart': ('string deviceIdentifier', 'Device')}}},
-#                  # checked above
-#  'SensorDevice': {'score': 1, 'counterpart': 'SensorDevice', 'attributes': {}},
-#                  # checked above
-#  'ActuatorDevice': {'score': 1,
-#   'counterpart': 'ActuatorDevice',
-#   'attributes': {}},
-#                  # checked above
-#  'ActivityLog': {'score': 1, 'counterpart': 'ActivityLog', 'attributes': {}},
-#                  # checked above
-#  'abstract RuntimeElement': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'time timestamp': {'score': 0.5,
-#     'counterpart': ('time timeStamp', 'SensorReading')}}},
-#                  # checked above
-#  'SensorReading': {'score': 1,
-#   'counterpart': 'SensorReading',
-#   'attributes': {'double value': {'score': 1,
-#     'counterpart': ('float measuredValue', 'SensorReading')}}},
-#                   # checked above
-#  'ControlCommand': {'score': 1,
-#   'counterpart': 'ActuatorCommand',
-#   'attributes': {'CommandType commandType': {'score': 1,
-#     'counterpart': ('ControlCommand controlCommand', 'ActuatorCommand')},
-#    'CommandStatus commandStatus': {'score': 1,
-#     'counterpart': ('Status status', 'ActuatorCommand')}}},
-#                   # checked above
-#  'AlertRule': {'score': 1,
-#   'counterpart': 'AutomationRule',
-#   'attributes': {'RuleStatus ruleStatus': {'score': 1,
-#     'counterpart': ('RuleStatus ruleStatus', 'AutomationRule')}}},
-#                   # checked above
-#  'abstract BooleanExpression': {'score': 0.5,
-#   'counterpart': 'Precondition',
-#   'attributes': {}},
-#                   # checked above
-#  'RelationalTerm': {'score': 1,
-#   'counterpart': 'RelationalTerm',
-#   'attributes': {}},
-#                   # checked above
-#  'NotExpression': {'score': 0, 'counterpart': None, 'attributes': {}},
-#                   # checked above
-#  'BinaryExpression': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'BinaryOp binaryOp': {'score': 0, 'counterpart': None}}},
-#                   # checked above
-#  'CommandSequence': {'score': 1, 'counterpart': 'Action', 'attributes': {}}}
-#  # checked above
-
-# %%
-# stu_cls_human = {'DeviceStatus': {'score': 1,
-#   'counterpart': 'DeviceStatus',
-#   'attributes': {'Activated': {'score': 1,
-#     'counterpart': ('Activated', 'DeviceStatus')},
-#    'Deactivated': {'score': 1,
-#     'counterpart': ('Deactivated', 'DeviceStatus')}}},
-#                   # checked above
-#  'ControlCommand': {'score': 1,
-#   'counterpart': 'CommandType',
-#   'attributes': {'LockDoor': {'score': 1,
-#     'counterpart': ('lockDoor', 'CommandType')},
-#    'TurnOnHeating': {'score': 1,
-#     'counterpart': ('turnOnHeating', 'CommandType')}}},
-#                   # checked above
-#  'Status': {'score': 1,
-#   'counterpart': 'CommandStatus',
-#   'attributes': {'Requested': {'score': 1,
-#     'counterpart': ('Requested', 'CommandStatus')},
-#    'Completed': {'score': 1, 'counterpart': ('Completed', 'CommandStatus')},
-#    'Failed': {'score': 1, 'counterpart': ('Failed', 'CommandStatus')}}},
-#                   # checked above
-#  'RuleStatus': {'score': 1,
-#   'counterpart': 'RuleStatus',
-#   'attributes': {'Created': {'score': 1,
-#     'counterpart': ('created', 'RuleStatus')},
-#    'Edited': {'score': 1, 'counterpart': ('edited', 'RuleStatus')},
-#    'Activated': {'score': 1, 'counterpart': ('activated', 'RuleStatus')},
-#    'Deactivated': {'score': 1, 'counterpart': ('deactivated', 'RuleStatus')}}},
-#                   # checked above
-
-#  'TypeOfActuator': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'LightController': {'score': 0, 'counterpart': None},
-#    'LockController': {'score': 0, 'counterpart': None}}},
-#                   # checked above
-#  'TypeOfSensor': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'TemperatureSensor': {'score': 0, 'counterpart': None},
-#    'MovementSensor': {'score': 0, 'counterpart': None}}},
-#                   # checked above
-#  'SHAS': {'score': 1, 'counterpart': 'SHAS', 'attributes': {}},
-#                   # checked above
-#  'SmartHome': {'score': 1,
-#   'counterpart': 'SmartHome',
-#   'attributes': {'string address': {'score': 0.5,
-#     'counterpart': ('string city', 'Address')}}},
-#                   # checked above
-#  'User': {'score': 1, 'counterpart': 'User', 'attributes': {}},
-#                   # checked above
-#  'Room': {'score': 1, 'counterpart': 'Room', 'attributes': {}},
-#                   # checked above
-#  'Device': {'score': 0.5,
-#   'counterpart': 'abstract Device',
-#   'attributes': {'string deviceIdentifier': {'score': 1,
-#     'counterpart': ('int deviceID', 'abstract Device')}}},
-#                   # checked above
-#  'SensorDevice': {'score': 1,
-#   'counterpart': 'SensorDevice',
-#   'attributes': {'TypeOfSensor typeOfSensor': {'score': 0,
-#     'counterpart': None}}},
-#                   # checked above
-#  'ActuatorDevice': {'score': 1,
-#   'counterpart': 'ActuatorDevice',
-#   'attributes': {'TypeOfActuator typeOfActuator': {'score': 0,
-#     'counterpart': None}}},
-#                   # checked above
-#  'ActivityLog': {'score': 1, 'counterpart': 'ActivityLog', 'attributes': {}},
-#                   # checked above
-#  'SensorReading': {'score': 1,
-#   'counterpart': 'SensorReading',
-#   'attributes': {'float measuredValue': {'score': 1,
-#     'counterpart': ('double value', 'SensorReading')},
-#    'time timeStamp': {'score': 0.5, 'counterpart': ('time timestamp', 'abstract RuntimeElement')}}},
-#                   # checked above
-#  'ActuatorCommand': {'score': 1,
-#   'counterpart': 'ControlCommand',
-#   'attributes': {'ControlCommand controlCommand': {'score': 1,
-#     'counterpart': ('CommandType commandType', 'ControlCommand')},
-#    'Time timeStamp': {'score': 0, 'counterpart': None},
-#    'Status status': {'score': 1,
-#     'counterpart': ('CommandStatus commandStatus', 'ControlCommand')}}},
-#                  # checked above
-#  'AutomationRule': {'score': 1,
-#   'counterpart': 'AlertRule',
-#   'attributes': {'RuleStatus ruleStatus': {'score': 1,
-#     'counterpart': ('RuleStatus ruleStatus', 'AlertRule')},
-#    'Time timeStamp': {'score': 0,
-#     'counterpart': None}}},
-#                  # checked above
-#  'Precondition': {'score': 0.5,
-#   'counterpart': 'abstract BooleanExpression',
-#   'attributes': {}},
-#                  # checked above
-#  'RelationalTerm': {'score': 1,
-#   'counterpart': 'RelationalTerm',
-#   'attributes': {}},
-#                  # checked above
-#  'Action': {'score': 1, 'counterpart': 'CommandSequence', 'attributes': {}},
-#                  # checked above
-#  'InfrastructureMap': {'score': 0, 'counterpart': None, 'attributes': {}},
-#                  # checked above
-#  'ChangeInState': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'DeviceStatus deviceStatus': {'score': 0.5,
-#     'counterpart': ('DeviceStatus deviceStatus', 'abstract Device')}}},
-#                  # checked above
-#  'Owner': {'score': 0, 'counterpart': None, 'attributes': {}},
-#                  # checked above
-#  'SeparationWord': {'score': 0,
-#   'counterpart': None,
-#   'attributes': {'String word': {'score': 0,
-#     'counterpart': None}}}}
-#     # checked above
-
-# %% [markdown]
-# ### Relationship
-
-# %%
-# ref_rel_human = [{'dsl': '1 SHAS contain * SmartHome', 'score': 0, 'counterpart': None},
-#  {'dsl': '1 SHAS contain * User',
-#   'score': 1,
-#   'counterpart': '1 SHAS contain * User'},
-#                  # checked above
-#  {'dsl': '1 SmartHome contain 0..1 Address', 'score': 0, 'counterpart': None},
-#                  # checked above
-#  {'dsl': '1 SmartHome contain * Room',
-#   'score': 0.5,
-#   'counterpart': '* Room associate 1 SmartHome'},
-#                  # checked above
-#  {'dsl': '1 SmartHome contain 0..1 ActivityLog',
-#   'score': 0,
-#   'counterpart': None},
-#                   # checked above
-#  {'dsl': '* SmartHome associate * User', 'score': 0, 'counterpart': None},
-#                   # checked above
-#  {'dsl': '1 Room contain * SensorDevice', 'score': 0, 'counterpart': None},
-#                    # checked above
-#  {'dsl': '1 Room contain * ActuatorDevice', 'score': 0, 'counterpart': None},
-#                  # checked above
-#  {'dsl': '1 ActivityLog contain * SensorReading',
-#   'score': 0.5,
-#   'counterpart': '1 ActivityLog associate * SensorReading'},
-#                  # checked above
-#  {'dsl': '1 ActivityLog contain * ControlCommand',
-#   'score': 0.5,
-#   'counterpart': '1 ActivityLog associate * ActuatorCommand'},
-#                  # checked above
-#  {'dsl': '* SensorReading associate 1 SensorDevice',
-#   'score': 0.5,
-#   'counterpart': '1 SensorDevice contain * SensorReading'},
-#                  # checked above
-#  {'dsl': '* ControlCommand associate 1 ActuatorDevice',
-#   'score': 0.5,
-#   'counterpart': '1 ActuatorDevice contain * ActuatorCommand'},
-#                  # checked above
-#  {'dsl': '1 AlertRule contain 0..1 BooleanExpression',
-#   'score': 0.5,
-#   'counterpart': '1..* AutomationRule contain 1..* Precondition'},
-#                   # checked above
-#  {'dsl': '1 AlertRule contain * CommandSequence',
-#   'score': 0.5,
-#   'counterpart': '1..* AutomationRule contain 1..* Action'},
-#                  # checked above
-#  {'dsl': '* RelationalTerm associate 0..1  Room',
-#   'score': 0,
-#   'counterpart': None},
-#                  # checked above
-#  {'dsl': '* RelationalTerm associate 0..1  Device',
-#   'score': 0,
-#   'counterpart': None},
-#                  # checked above
-#  {'dsl': '* RelationalTerm associate 0..1  RuntimeElement',
-#   'score': 0,
-#   'counterpart': None},
-#                  # checked above
-#  {'dsl': '0..1 NotExpression associate 1 BooleanExpression',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '0..1 BinaryExpression associate 1 BooleanExpression',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '0..1 BinaryExpression associate 1 BooleanExpression',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '* CommandSequence associate 0..1 CommandSequence',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '1 CommandSequence contain 0..1 ControlCommand',
-#   'score': 0.5,
-#   'counterpart': '* Action associate 1..* ActuatorCommand'},
-#  {'dsl': 'SensorReading inherit RuntimeElement',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'ControlCommand inherit RuntimeElement',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'NotExpression inherit BooleanExpression',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'BinaryExpression inherit BooleanExpression',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'RelationalTerm inherit BooleanExpression',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'SensorDevice inherit Device',
-#   'score': 1,
-#   'counterpart': 'SensorDevice inherit Device'},
-#                  # checked above
-#  {'dsl': 'ActuatorDevice inherit Device',
-#   'score': 1,
-#   'counterpart': 'ActuatorDevice inherit Device'}]
-#   # checked above
-
-# %%
-# stu_rel_human = [{'dsl': '1 SHAS contain * User',
-#   'score': 1,
-#   'counterpart': '1 SHAS contain * User'},
-#                    # checked above
-#  {'dsl': '* Room associate 1 SmartHome',
-#   'score': 0.5,
-#   'counterpart': '1 SmartHome contain * Room'},
-#                    # checked above
-#  {'dsl': '1 SHAS contain 1 ActivityLog', 'score': 0, 'counterpart': None},
-#                    # checked above
-#  {'dsl': '* Device assocaite 1 Room', 'score': 0, 'counterpart': None},
-#                    # checked above
-#  {'dsl': '1 ActivityLog associate * SensorReading',
-#   'score': 0.5,
-#   'counterpart': '1 ActivityLog contain * SensorReading'},
-#                    # checked above
-#  {'dsl': '1 ActivityLog associate * ActuatorCommand',
-#   'score': 0.5,
-#   'counterpart': '1 ActivityLog contain * ControlCommand'},
-#                    # checked above
-#  {'dsl': '1 SensorDevice contain * SensorReading',
-#   'score': 0.5,
-#   'counterpart': '* SensorReading associate 1 SensorDevice'},
-#                    # checked above
-#  {'dsl': '1 ActuatorDevice contain * ActuatorCommand',
-#   'score': 0.5,
-#   'counterpart': '* ControlCommand associate 1 ActuatorDevice'},
-#                    # checked above
-#  {'dsl': '1..* AutomationRule contain 1..* Precondition',
-#   'score': 0.5,
-#   'counterpart': '1 AlertRule contain 0..1 BooleanExpression'},
-#                    # checked above
-#  {'dsl': '1..* AutomationRule contain 1..* Action',
-#   'score': 0.5,
-#   'counterpart': '1 AlertRule contain * CommandSequence'},
-#                    # checked above
-#  {'dsl': '* Action associate 1..* ActuatorCommand',
-#   'score': 0.5,
-#   'counterpart': '1 CommandSequence contain 0..1 ControlCommand'},
-#                    # checked above
-#  {'dsl': 'SensorDevice inherit Device',
-#   'score': 1,
-#   'counterpart': 'SensorDevice inherit Device'},
-#                    # checked above
-#  {'dsl': 'ActuatorDevice inherit Device',
-#   'score': 1,
-#   'counterpart': 'ActuatorDevice inherit Device'},
-#                    # checked above
-#  {'dsl': 'Device inherit RelationalTerm', 'score': 0, 'counterpart': None},
-#  {'dsl': 'Room inherit RelationalTerm', 'score': 0, 'counterpart': None},
-#  {'dsl': 'User inherit Owner', 'score': 0, 'counterpart': None},
-#  {'dsl': '1 SHAS contain 1 InfrastructureMap',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'SensorReading inherit RelationalTerm',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': 'ActuatorCommand inherit RelationalTerm',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '* ChangeInState associate 1 Device',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '* ChangeInState associate 1 InfrastructureMap',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '* AutomationRule associate * AutomationRule',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '1 Owner associate * AutomationRule',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '* Owner associate * SmartHome', 'score': 0, 'counterpart': None},
-#  {'dsl': '* Precondition associate * RelationalTerm',
-#   'score': 0,
-#   'counterpart': None},
-#  {'dsl': '1..* SeparationWord associate * Precondition',
-#   'score': 0,
-#   'counterpart': None}]
-#     # checked above
-
-# %% [markdown]
 # ### Save to disk
 
 # %%
@@ -1825,6 +1414,9 @@ for key in tmp:
         human_mappings.append(matching)
 
 # %%
+human_mappings
+
+# %%
 # compare performance
 # algo matching
 grader.ref.cls_atr
@@ -1843,6 +1435,9 @@ for key in tmp:
 
     if not exist_mapping(EMB_mappings, matching):
         EMB_mappings.append(matching)
+
+# %%
+EMB_mappings
 
 # %% [markdown]
 # ##### Start Evaluation
@@ -1903,14 +1498,13 @@ for i in human_mappings:
 def find_mapping_with_cls(mapping_dict, mapping, pos):
     # position = 0 or 1
     for i in mapping_dict:
-        if i[pos] == mapping[pos]:
+        element = mapping[pos]
+
+        if i[pos] == element:
             return i
     print("no mapping is found with", mapping, pos)
     return None
 
-
-# %%
-EMB_mappings_dict
 
 # %%
 human_mappings_dict
@@ -1920,8 +1514,11 @@ for i in human_mappings_dict:
         continue  # if mapped, ignore
 
         # i[0] is human pair
-    elif i[0] is not None:
-        mapping = find_mapping_with_cls(EMB_mappings_dict, i, 0)  # generated pair
+    mapping_0 = find_mapping_with_cls(EMB_mappings_dict, i, 0)  # human result
+    mapping_1 = find_mapping_with_cls(EMB_mappings_dict, i, 1)  # human result
+    if i[0] is not None and mapping_0:
+        mapping = mapping_0
+        # if mapping:
         if i[1] is not None and mapping[1] is not None:  # a b	// a c	0	FP
             FP.append((i, mapping))
             human_mappings_dict[i] = True
@@ -1937,8 +1534,8 @@ for i in human_mappings_dict:
             human_mappings_dict[i] = True
             EMB_mappings_dict[mapping] = True
 
-    elif i[1] is not None:
-        mapping = find_mapping_with_cls(EMB_mappings_dict, i, 1)  # generated pair
+    elif i[1] is not None and mapping_1:
+        mapping = mapping_1
         if i[0] is None and mapping[0] is not None:  # none a //	b a 	0	FP
             FP.append((i, mapping))
             human_mappings_dict[i] = True
@@ -1953,6 +1550,8 @@ for i in human_mappings_dict:
             FP.append((i, mapping))
             human_mappings_dict[i] = True
             EMB_mappings_dict[mapping] = True
+    else:
+        raise Exception(f"Sorry, no match found for {i}")
 
 
 # %%
@@ -1963,8 +1562,10 @@ for i in EMB_mappings_dict:
         continue  # if mapped, ignore
 
         # i[0] is generaeted pair
-    elif i[0] is not None:
-        mapping = find_mapping_with_cls(human_mappings_dict, i, 0)  # human result
+    mapping_0 = find_mapping_with_cls(human_mappings_dict, i, 0)  # human result
+    mapping_1 = find_mapping_with_cls(human_mappings_dict, i, 1)  # human result
+    if i[0] is not None and mapping_0:
+        mapping = mapping_0
         if i[1] is not None and mapping[1] is not None:  # a b	// a c	0	FP
             FP.append((mapping, i))
             human_mappings_dict[mapping] = True
@@ -1980,8 +1581,8 @@ for i in EMB_mappings_dict:
             human_mappings_dict[mapping] = True
             EMB_mappings_dict[i] = True
 
-    elif i[1] is not None:
-        mapping = find_mapping_with_cls(human_mappings_dict, i, 1)
+    elif i[1] is not None and mapping_1:
+        mapping = mapping_1
         if mapping[0] is not None and i[0] is None:  # b a //	none a 	0	FN
             FN.append((i, mapping))
             human_mappings_dict[mapping] = True
@@ -1996,9 +1597,8 @@ for i in EMB_mappings_dict:
             FP.append((i, mapping))
             human_mappings_dict[mapping] = True
             EMB_mappings_dict[i] = True
-
-# %%
-EMB_mappings_dict
+    else:
+        raise Exception("matching failed")
 
 # %%
 # precision = TP /(TP + FP)
@@ -2056,6 +1656,9 @@ for cls in tmp:
         if not exist_mapping(human_mappings, matching):
             # print(matching)
             human_mappings.append(matching)
+
+# %%
+human_mappings
 
 # %%
 # compare performance
@@ -2149,45 +1752,45 @@ for i in human_mappings_dict:
     if human_mappings_dict[i]:
         continue  # if mapped, ignore
 
-        # i[0] is human pair
-    elif i[0] is not None:
-        mapping = find_mapping_with_cls(EMB_mappings_dict, i, 0)  # generated pair
+    else:
+        mapping_0 = find_mapping_with_cls(EMB_mappings_dict, i, 0)
+        mapping_1 = find_mapping_with_cls(EMB_mappings_dict, i, 1)
+        if i[0] is not None and mapping_0:
+            mapping = mapping_0
+            # print(i, mapping)
+            if i[1] is not None and mapping[1] is not None:  # a b	// a c	0	FP
+                FP.append((i, mapping))
+                human_mappings_dict[i] = True
+                EMB_mappings_dict[mapping] = True
 
-        # print(i, mapping)
+            elif i[1] is not None and mapping[1] is None:  # a b	// a None	0	FN
+                FN.append((i, mapping))
+                human_mappings_dict[i] = True
+                EMB_mappings_dict[mapping] = True
 
-        if i[1] is not None and mapping[1] is not None:  # a b	// a c	0	FP
-            FP.append((i, mapping))
-            human_mappings_dict[i] = True
-            EMB_mappings_dict[mapping] = True
+            elif i[1] is None and mapping[1] is not None:  # a None // a b	0	FP
+                FP.append((i, mapping))
+                human_mappings_dict[i] = True
+                EMB_mappings_dict[mapping] = True
 
-        elif i[1] is not None and mapping[1] is None:  # a b	// a None	0	FN
-            FN.append((i, mapping))
-            human_mappings_dict[i] = True
-            EMB_mappings_dict[mapping] = True
+        elif i[1] is not None and mapping_1:
+            mapping = mapping_1  # generated pair
+            # print(i)
+            # print(mapping)
+            if i[0] is None and mapping[0] is not None:  # none a //	b a 	0	FP
+                FP.append((i, mapping))
+                human_mappings_dict[i] = True
+                EMB_mappings_dict[mapping] = True
 
-        elif i[1] is None and mapping[1] is not None:  # a None // a b	0	FP
-            FP.append((i, mapping))
-            human_mappings_dict[i] = True
-            EMB_mappings_dict[mapping] = True
+            elif i[0] is not None and mapping[0] is None:  # b a	// none a  	0	FN
+                FN.append((i, mapping))
+                human_mappings_dict[i] = True
+                EMB_mappings_dict[mapping] = True
 
-    elif i[1] is not None:
-        mapping = find_mapping_with_cls(EMB_mappings_dict, i, 1)  # generated pair
-        # print(i)
-        # print(mapping)
-        if i[0] is None and mapping[0] is not None:  # none a //	b a 	0	FP
-            FP.append((i, mapping))
-            human_mappings_dict[i] = True
-            EMB_mappings_dict[mapping] = True
-
-        elif i[0] is not None and mapping[0] is None:  # b a	// none a  	0	FN
-            FN.append((i, mapping))
-            human_mappings_dict[i] = True
-            EMB_mappings_dict[mapping] = True
-
-        elif i[0] is not None and mapping[0] is not None:  # c a	// b a  0	FP
-            FP.append((i, mapping))
-            human_mappings_dict[i] = True
-            EMB_mappings_dict[mapping] = True
+            elif i[0] is not None and mapping[0] is not None:  # c a	// b a  0	FP
+                FP.append((i, mapping))
+                human_mappings_dict[i] = True
+                EMB_mappings_dict[mapping] = True
 
 
 # %%
@@ -2198,9 +1801,15 @@ for i in EMB_mappings_dict:
         continue  # if mapped, ignore
 
         # i[0] is generaeted pair
-    elif i[0] is not None:
-        mapping = find_mapping_with_cls(human_mappings_dict, i, 0)  # human result
-        if i[1] is not None and mapping[1] is not None:  # a b	// a c	0	FP
+    mapping_0 = find_mapping_with_cls(human_mappings_dict, i, 0)  # human result
+    mapping_1 = find_mapping_with_cls(human_mappings_dict, i, 1)  # human result
+
+    if i[0] is not None and mapping_0:
+        # mapping = find_mapping_with_cls(human_mappings_dict, i, 0) # human result
+
+        mapping = mapping_0
+        if i[1] is not None and mapping_0[1] is not None:  # a b	// a c	0	FP
+            mapping = mapping_0
             FP.append((mapping, i))
             human_mappings_dict[mapping] = True
             EMB_mappings_dict[i] = True
@@ -2215,7 +1824,8 @@ for i in EMB_mappings_dict:
             human_mappings_dict[mapping] = True
             EMB_mappings_dict[i] = True
 
-    elif i[1] is not None:
+    elif i[1] is not None and mapping_1:
+        mapping = mapping_1
         mapping = find_mapping_with_cls(human_mappings_dict, i, 1)
         if mapping[0] is not None and i[0] is None:  # b a //	none a 	0	FN
             FN.append((i, mapping))
@@ -2358,21 +1968,10 @@ for i in human_mappings:
 
 
 # %%
-EMB_mappings_dict
-
-# %%
-EMB_mappings_dict
-
-# %%
-for i in human_mappings_dict:
-    if i[0] == "1 AutomationRule contain * Action":
-        print(i)
-
-# %%
 human_mappings_dict
 
 for i in human_mappings_dict:
-    print(i)
+    # print(i)
     if human_mappings_dict[i]:
         continue  # if mapped, ignore
 
@@ -2474,6 +2073,12 @@ algo_human["relationship"]["recall"] = r
 
 algo_human["relationship"]["f1"] = 2 * p * r / (p + r)
 
+
+# %%
+algo_human
+
+# %%
+student_out_dir
 
 # %%
 

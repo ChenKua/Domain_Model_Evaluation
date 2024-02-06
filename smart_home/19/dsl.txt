@@ -1,0 +1,87 @@
+Enumerations:
+
+CommandType(lockDoor,turnOnHeating)
+
+
+Operator(And,Or,Not)
+DeviceType(TemperatureSenor,MovementSensor,LockController,LightController)
+
+
+
+Classes:
+SmartHomeApplicationSystem()
+SmartHome()
+User()
+Address( String postalCode, String streetName, String city, Integer streetNumber, Integer apartmentNumber)
+Room()
+abstract Device( boolean isActive, unique Integer id, DeviceType deviceType)
+SensorDevice()
+ActuatorDevice()
+ActivityLog()
+
+SensorReading( Double measuredValue, String timeStamp)
+ControlCommand( String timeStamp, String commandStatus)
+AutomationRule()
+PreCondition()
+RelationalTerm( String condition)
+
+
+BooleanOperator( Operator operator)
+Action()
+PredefinedCommand( CommandType commandType)
+
+
+Relationships:
+1  SmartHomeApplicationSystem contain  * SmartHome 
+1  SmartHomeApplicationSystem contain  * User
+
+1 SmartHome associate  1 Address
+1 SmartHome contain  1..* Room
+
+
+
+
+1 Room contain  * Device
+
+
+1  ActivityLog contain  * SensorReading
+1  ActivityLog contain  * ControlCommand
+
+1 SensorDevice associate  * SensorReading
+
+1 ActuatorDevice associate  * ControlCommand
+
+1 AutomationRule contain  1 PreCondition
+1 AutomationRule contain  1 Action
+
+
+* RelationalTerm associate 0..1 Room
+
+
+
+
+
+
+
+
+1  PreCondition contain  * BooleanOperator
+
+
+
+
+
+
+
+
+
+SensorDevice inherit  Device
+ActuatorDevice inherit  Device
+
+1  SmartHomeApplicationSystem contain  1 ActivityLog
+1  SmartHomeApplicationSystem contain  * PredefinedCommand
+1  SmartHomeApplicationSystem contain  * AutomationRule
+
+* PredefinedCommand associate  0..1 Room 
+1 PredefinedCommand associate  * ControlCommand
+
+0..1  Action associate  * PredefinedCommand

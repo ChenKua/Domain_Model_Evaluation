@@ -1,0 +1,83 @@
+Enumerations:
+DeviceStatus (Activated, Deactivated)
+
+CommandStatus (Requested, Completed, Failed)
+RuleStatus (Activate, Deactivate)
+
+DeviceType (TemperatorSensor, MovementSensor, LightController, LockController)
+
+
+
+Classes:
+SHASystem()
+SmartHome( address)
+User()
+
+Room()
+abstract Device( unique id, DeviceStatus deviceStatus, DeviceType deviceType)
+SensorDevice()
+ActuatorDevice()
+ActivityLog()
+
+SensorReading( measuredValue, Time timeStamp)
+ControlCommand( name, Time timeStamp, CommandStatus commandstatus)
+AutomationRule( RuleStatus status, Time timeStamp)
+Precondition( boolean booleanValue)
+
+
+
+BooleanOperator( name)
+Action()
+Alert()
+
+
+Relationships:
+1 SHASystem contain  * SmartHome
+1 SHASystem contain  * User
+1 SHASystem contain  * ActivityLog
+1 SHASystem contain  * AutomationRule
+1 SHASystem contain  * Alert
+
+
+1 SmartHome contain  * Room
+
+1 User associate  1 SmartHome 
+1 SmartHome associate  * AutomationRule
+
+1 Room contain  * Device
+*  Room associate  * Precondition
+
+
+
+* Device associate  1 ActivityLog
+1 SensorDevice contain  * SensorReading
+
+1 ActuatorDevice contain  * ControlCommand
+
+1  AutomationRule contain  1 Precondition
+1 AutomationRule contain  1 Action
+*  AutomationRule associate  * AutomationRule
+
+
+
+
+
+
+
+
+
+1 Precondition contain  * BooleanOperator
+
+
+
+* ControlCommand associate  * Action
+
+
+
+
+
+
+SensorDevice inherit  Device
+ActuatorDevice inherit  Device
+
+* Alert associate * AutomationRule

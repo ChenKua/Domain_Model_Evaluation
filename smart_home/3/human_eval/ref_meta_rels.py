@@ -27,6 +27,11 @@
         "counterpart": None,
     },
     {
+        "dsl": "1  SmartHome contain  * AlertRule",
+        "score": 1,
+        "counterpart": "1 SmartHome contain * AutomationRule",
+    },
+    {
         "dsl": "1 Room contain * ActuatorDevice",
         "score": 0,
         "counterpart": None,
@@ -62,9 +67,18 @@
         "counterpart": "1 AutomationRule contain 1 Action",
     },
     {"dsl": "* RelationalTerm associate 0..1  Room", "score": 0, "counterpart": None},
-    {"dsl": "* RelationalTerm associate 0..1  Device", "score": 0, "counterpart": None},
     {
-        "dsl": "* RelationalTerm associate 0..1  RuntimeElement",
+        "dsl": "* RelationalTerm associate 0..1  SensorDevice",
+        "score": 0,
+        "counterpart": None,
+    },
+    {
+        "dsl": "* RelationalTerm associate 0..1  ActuatorDevice",
+        "score": 0,
+        "counterpart": None,
+    },
+    {
+        "dsl": "* RelationalTerm associate 0..1  SensorReading",
         "score": 0,
         "counterpart": None,
     },

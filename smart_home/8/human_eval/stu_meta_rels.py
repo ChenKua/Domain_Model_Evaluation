@@ -36,8 +36,8 @@
     },
     {
         "dsl": "1 AtomicTerm associate  1..* Element",
-        "score": 0.5,
-        "counterpart": "* RelationalTerm associate 0..1  RuntimeElement",
+        "score": 0,
+        "counterpart": None,
     },
     {
         "dsl": "1 Precondition associate  1..* Relation",

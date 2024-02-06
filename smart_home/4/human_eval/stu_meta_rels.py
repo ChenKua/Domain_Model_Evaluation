@@ -46,8 +46,8 @@
     },
     {
         "dsl": "* AtomicRelation associate  0..1 Device",
-        "score": 1,
-        "counterpart": "* RelationalTerm associate 0..1  Device",
+        "score": 0,
+        "counterpart": None,
     },
     {
         "dsl": "* AtomicRelation associate  0..1 Command",

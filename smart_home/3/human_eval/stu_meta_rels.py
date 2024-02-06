@@ -72,7 +72,11 @@
     {"dsl": "1 User contain 0..1 Owner", "score": 0, "counterpart": None},
     {"dsl": "1 Owner contain * SmartHome", "score": 0, "counterpart": None},
     {"dsl": "1 SmartHome contain * SensorReading", "score": 0, "counterpart": None},
-    {"dsl": "1 SmartHome contain * AutomationRule", "score": 0, "counterpart": None},
+    {
+        "dsl": "1 SmartHome contain * AutomationRule",
+        "score": 1,
+        "counterpart": "1  SmartHome contain  * AlertRule",
+    },
     {
         "dsl": "1 AutomationRule contain * AutomationRuleLog",
         "score": 0,

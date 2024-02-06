@@ -1,0 +1,85 @@
+Enumerations:
+
+
+
+
+RelationType(AND,OR,NOT)
+Operation(CONTROLLER,SENSOR)
+
+
+
+Classes:
+
+SmartHome()
+
+Address( String city, String province, String streetNumber, String country, String postalCode, String streetName)
+SmartRoom( String roomName)
+abstract Device( autounique identifier, boolean isActivated)
+SensorDevice()
+ActuatorDevice()
+ActivityLog()
+
+SensorReading( Date timestamp)
+ControlCommand( String commandName, Date timestamp, String status)
+AutomationRule( boolean isActivated)
+AutomationPrecondition( boolean statement, RelationType relationToNextPrecondition)
+
+
+
+
+
+MeasuredValue( String nameOfValue, String value)
+DeviceType ( String element, Operation operation)
+AutomationTrigger( Date timestamp)
+
+Relationships:
+
+
+
+1  SmartHome contain  1 Address
+1  SmartHome contain  * SmartRoom
+1  SmartHome contain  1 ActivityLog 
+
+1  SmartHome contain  * AutomationRule
+
+1  SmartRoom associate  * Device
+
+
+1  ActivityLog associate  * SensorReading
+1  ActivityLog associate  * ControlCommand
+
+1  SensorDevice associate  * SensorReading
+
+1  ActuatorDevice associate  * ControlCommand
+
+*  AutomationRule associate  1 AutomationPrecondition
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SensorDevice inherit  Device
+ActuatorDevice inherit  Device
+*  Device associate  1 DeviceType
+1  SensorReading associate  1 MeasuredValue measuredValue
+1  ActivityLog associate  * AutomationTrigger
+*  AutomationRule associate  1..* ActuatorDevice
+*  AutomationRule associate  0..1 AutomationRule
+*  AutomationTrigger associate  1 AutomationRule

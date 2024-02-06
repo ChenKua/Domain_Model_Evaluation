@@ -112,7 +112,10 @@
         "dsl": "abstract Device(DeviceStatus deviceStatus, int deviceID)",
         "counterpart": "Device",
         "attributes": {
-            "DeviceStatus deviceStatus": {"score": 0.5, "counterpart":  ("Boolean isActive", "Device")},
+            "DeviceStatus deviceStatus": {
+                "score": 0.5,
+                "counterpart": ("Boolean isActive", "Device"),
+            },
             "int deviceID": {
                 "score": 1,
                 "counterpart": ("auto unique identifier", "Device"),
@@ -185,7 +188,12 @@
         "type": "regular",
         "dsl": "AlertRule (RuleStatus ruleStatus)",
         "counterpart": "AutomationRule",
-        "attributes": {"RuleStatus ruleStatus": {"score": 0.5, "counterpart": ("Boolean isActive", "AutomationRule")}},
+        "attributes": {
+            "RuleStatus ruleStatus": {
+                "score": 0.5,
+                "counterpart": ("Boolean isActive", "AutomationRule"),
+            }
+        },
     },
     "abstract BooleanExpression": {
         "score": 0.5,

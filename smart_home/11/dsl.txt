@@ -1,0 +1,88 @@
+Enumerations:
+
+
+Status( Requested, Completed, Failed )
+
+Operator(AND, OR, NOT)
+comparisson ( LessThan, GreaterThan, Equals )
+
+
+
+Classes:
+
+SmartHome ( String address)
+
+
+Room ()
+RoomElement( boolean active, String id)
+Sensor( double value)
+Actuator()
+
+Activity( String timestamp)
+
+Reading ( double value)
+Command( String command)
+Rule( boolean active)
+RuleElement()
+RelationalTerm()
+
+
+BooleanOperator()
+Action( String command)
+RuleTrigger()
+SensorCheck( double target)
+ActiveCheck ()
+
+Relationships:
+
+
+
+
+1  SmartHome contain  * Room
+1  SmartHome contain  * Activity
+
+1  SmartHome contain  * Rule
+
+
+
+
+
+
+
+*  Reading associate  1 Sensor
+
+*  Command associate  1 Actuator
+*  Action associate  1 Actuator
+1  Rule contain  1..* RuleElement
+1  Rule contain  1..* Action
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BooleanOperator inherit  RuleElement
+RelationalTerm inherit  RuleElement
+Sensor inherit  RoomElement
+Actuator inherit  RoomElement
+Command inherit  Activity
+Reading inherit  Activity
+RuleTrigger inherit  Activity
+*  RuleTrigger associate  1 Rule
+SensorCheck inherit  RelationalTerm
+*  SensorCheck associate  1 Sensor
+ActiveCheck inherit  RelationalTerm
+*  ActiveCheck associate  1 RoomElement

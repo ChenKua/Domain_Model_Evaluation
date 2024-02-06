@@ -1,0 +1,88 @@
+Enumerations:
+
+
+CommandStatus(REQUESTED,FAILED,COMPLETED)
+
+
+DeviceType(TEMPERATURE_SENSOR,MOVEMENT_SENSOR,LIGHT_CONTROLLER, LOCK_CONTROLLER)
+
+
+
+Classes:
+SHAS ()
+
+User( String name)
+Address( int addressNumber, String streetName, String postalCode)
+Room()
+Device( DeviceType type, Room room, autounique identifier, boolean isActive)
+SensorDevice( SensorReading lastReading)
+ActuatorDevice( ControlCommand lastCommand)
+ActivityLog()
+
+SensorReading( int readingValue, int time, Room room)
+ControlCommand( int time, CommandStatus status, Room room)
+AutomationRule( int priority, int time, boolean isActive)
+PreCondition()
+
+
+
+
+Action()
+
+
+
+Relationships:
+
+1  SHAS  contain  * User
+
+
+
+
+
+
+
+
+
+1  ActivityLog contain  * SensorReading
+1  ActivityLog associate  * Device
+1  ActivityLog contain  * ControlCommand
+
+
+
+
+
+1  AutomationRule contain  1 PreCondition
+1  AutomationRule contain  1 Action
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+0..1  Action associate  * ControlCommand
+
+
+
+
+
+
+SensorDevice inherit  Device
+ActuatorDevice inherit  Device
+
+1  SHAS  contain  * Device
+1  SHAS  contain  1 ActivityLog
+1  SHAS  contain  1 Address
+1  SHAS  contain  * Room
+1  SHAS  contain  * AutomationRule
+
+0..*  PreCondition associate  1 ActivityLog
+0..*  PreCondition associate  * Room
+0..*  PreCondition associate  * Device

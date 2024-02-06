@@ -1,0 +1,88 @@
+Enumerations:
+
+TypeOfCommand (lockDoor, turnOnHeating)
+CommandStatus (Requested, Completed, Failed)
+
+
+SensorType (Temperature, Movement)
+ActuatorType (Light, Lock)
+ActuatorStatus (Opened, Closed)
+
+Classes:
+SHAS ( String address)
+
+
+
+Room ( String name)
+abstract Device (  int identifier, boolean isActive)
+Sensor ( SensorType type, SensorReading currentReading)
+Actuator ( ActuatorType type, ActuatorStatus status)
+
+abstract DeviceActivity ( String name, long timeStamp)
+SensorReading ( int value)
+ControlCommand ( TypeOfCommand type, CommandStatus status)
+AutomationRule ( String name, boolean isActive)
+Precondition ( String name, Object booleanExpression, boolean result)
+
+
+
+
+Action ( String name)
+HistoryRuleTriggered ( long timeStamp)
+
+
+Relationships:
+
+
+*  SHAS contain  1 Device
+1..*  SHAS  contain  1 Room
+*  SHAS  contain  1 AutomationRule
+*  SHAS  contain  1 HistoryRuleTriggered
+*  SHAS  contain  1 DeviceActivity
+
+
+
+
+
+
+1  Room  associate  * Device
+
+
+
+
+
+*  Sensor  contain  1 SensorReading
+
+*  ControlCommand  associate  1 Actuator
+
+1  AutomationRule  contain  1 Precondition
+1  AutomationRule  contain  1 Action
+*  AutomationRule  associate  * AutomationRule
+*  AutomationRule  associate  * AutomationRule
+*  HistoryRuleTriggered  associate  1 AutomationRule
+
+
+
+
+
+
+
+
+
+
+
+
+*  Action  associate  1..* ControlCommand
+
+SensorReading  inherit  DeviceActivity
+ControlCommand  inherit  DeviceActivity
+
+
+
+Sensor  inherit  Device
+Actuator  inherit  Device
+
+*  Precondition  associate  * SensorReading
+*  Precondition  associate  * Room
+*  Precondition  associate  * Device
+*  Precondition  associate  * ControlCommand

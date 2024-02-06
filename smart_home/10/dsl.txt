@@ -1,0 +1,85 @@
+Enumerations:
+
+
+ControllerStatus (Requested, Completed, Failed)
+
+BooleanOperator (AND, OR, NOT)
+Status (ON, OFF)
+
+
+
+Classes:
+SHAS()
+SmartHome( address)
+
+
+Room( name)
+abstract Device(  Integer uDI, Date timestamp)
+Sensor( Integer reading)
+
+Controller()
+ActivityLog()
+
+
+Command( ControllerStatus status)
+AutomationRule( Status status)
+Precondition()
+abstract RelationalTerm( )
+
+
+Operator( BooleanOperator operator)
+Action()
+InfrastructureMap()
+
+
+Relationships:
+1  SHAS contain  1 SmartHome 
+
+1  SHAS contain  1 ActivityLog
+
+
+
+1  SmartHome associate  * Room
+
+
+1  SmartHome associate  * AutomationRule
+
+
+*  Command associate  1 Room
+1  ActivityLog associate  * Device
+1  ActivityLog associate  * AutomationRule
+
+
+
+
+
+*  Command associate  1 Controller
+
+1  AutomationRule associate  1 Precondition
+1  AutomationRule associate  1 Action
+0..1  AutomationRule associate  0..1 AutomationRule
+
+1  Precondition associate  * RelationalTerm
+
+
+
+
+
+
+
+1  Precondition associate  * Operator
+
+
+
+1  Action associate  * Command
+
+
+
+
+
+
+Sensor inherit  Device
+Controller inherit  Device
+1  SHAS contain  1 InfrastructureMap 
+Room inherit  RelationalTerm
+1  InfrastructureMap associate  * Device 

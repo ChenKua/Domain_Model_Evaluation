@@ -1,0 +1,84 @@
+Enumerations:
+
+
+ControllerStatus ( Requested, Completed, Failed)
+AutomationRuleStatus ( Created, Edited, Activated, Deactivated)
+
+SensorType( TemperatureSensor, MovementSensor)
+ControllerType ( LightController, LockController)
+
+
+Classes:
+SHAS( boolean operational )
+SmartHome( address, owner)
+
+
+Room()
+abstract Device( unique Integer id, boolean activated )
+SensorDevice( SensorType type)
+ActuatorDevice( ControllerType type)
+
+
+SensorReading( int measuredValue, Time timestamp)
+ControlCommand( ControllerStatus status, Time timestamp, description)
+AutomationRule( boolean precondition, action, lazy Time timestamp, AutomationRuleStatus status)
+
+
+
+
+
+
+Alert( description)
+
+
+Relationships:
+1  SHAS associate  * SmartHome
+
+1  SHAS contain  * Device
+1  SHAS contain  * SensorReading
+1  SHAS contain  * ControlCommand
+1  SHAS contain  * AutomationRule 
+
+1  SmartHome contain  * Room
+
+
+1  SmartHome contain  * Alert
+
+1  Room associate  * Device
+
+*  AutomationRule associate  * SensorReading
+
+
+
+*  SensorReading associate  1 SensorDevice
+
+*  ControlCommand associate  1 ActuatorDevice
+
+
+*  AutomationRule associate  * ControlCommand
+*  AutomationRule associate  * SensorDevice
+*  AutomationRule associate  * ActuatorDevice
+*  AutomationRule associate  * Room
+*  AutomationRule associate  * Alert
+*  AutomationRule associate  * AutomationRule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SensorDevice inherit  Device
+ActuatorDevice inherit  Device

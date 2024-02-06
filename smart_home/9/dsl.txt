@@ -1,0 +1,85 @@
+Enumerations:
+
+
+ActionStatus ( requested, completed, failed)
+RuleStatus (created, edited,activated, deactivated )
+
+
+
+
+
+Classes:
+SHAS()
+
+User()
+Address()
+Room()
+abstract Device( Integer uniqueId, Boolean activated, type)
+Sensor()
+Actuator()
+ActivityLog()
+
+
+SensorReading( Integer measuredValue)
+ControlCommand( commandType)
+AutomationRule( RuleStatus rule, Boolean precondition)
+
+
+
+
+
+Action( ActionStatus status)
+Alert()
+TimeStamp()
+InfrastructureMap()
+Relationships:
+
+
+1 Address contain  * User
+1 SHAS contain 1 Address
+1 Address contain  * Room
+* Address associate  * InfrastructureMap
+
+
+
+
+
+
+1 Room  contain * Device
+* Device associate  1 InfrastructureMap 
+
+* ActivityLog associate  * SensorReading
+* ActivityLog associate  * ControlCommand
+
+1 Sensor contain  * SensorReading
+
+1 Actuator contain  * ControlCommand 
+
+
+* AutomationRule contain *Action
+* AutomationRule associate  * SensorReading 
+
+
+
+
+
+
+
+
+
+
+
+* Action associate  * ControlCommand 
+
+
+
+
+
+
+Sensor inherit  Device
+Actuator inherit  Device
+1 SensorReading associate  1 TimeStamp 
+1 ControlCommand associate  1 TimeStamp
+* ActivityLog associate  * Address
+* Action associate  * Alert
+1 Room contain * AutomationRule

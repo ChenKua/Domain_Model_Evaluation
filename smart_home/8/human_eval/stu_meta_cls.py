@@ -36,7 +36,7 @@
         },
     },
     "SensorType": {
-        "score":0,
+        "score": 0,
         "type": "enum",
         "dsl": "SensorType ( Temperature, Movement )",
         "counterpart": None,
@@ -79,7 +79,10 @@
                 "score": 1,
                 "counterpart": ("int deviceID", "abstract Device"),
             },
-            "Boolean isActive": {"score": 0.5, "counterpart": ("DeviceStatus deviceStatus","abstract Devices")},
+            "Boolean isActive": {
+                "score": 0.5,
+                "counterpart": ("DeviceStatus deviceStatus", "abstract Devices"),
+            },
         },
     },
     "Sensor": {
@@ -120,7 +123,10 @@
                 "score": 1,
                 "counterpart": ("double value", "SensorReading"),
             },
-            "Time timestamp": {"score": 0.5, "counterpart": ("time timestamp", "abstract RuntimeElement")},
+            "Time timestamp": {
+                "score": 0.5,
+                "counterpart": ("time timestamp", "abstract RuntimeElement"),
+            },
             "String readingType": {
                 "score": 0.5,
                 "counterpart": ("string aptNumber", "Address"),
@@ -153,7 +159,10 @@
         "dsl": "AutomationRule( Boolean isActive, Time activations)",
         "counterpart": "AlertRule",
         "attributes": {
-            "Boolean isActive": {"score": 0.5, "counterpart": ("RuleStatus ruleStatus","AlertRule")},
+            "Boolean isActive": {
+                "score": 0.5,
+                "counterpart": ("RuleStatus ruleStatus", "AlertRule"),
+            },
             "Time activations": {"score": 0, "counterpart": None},
         },
     },
@@ -162,9 +171,7 @@
         "type": "regular",
         "dsl": "Precondition( Boolean value)",
         "counterpart": "abstract BooleanExpression",
-        "attributes": {
-            "Boolean value": {"score": 0, "counterpart": None}
-        },
+        "attributes": {"Boolean value": {"score": 0, "counterpart": None}},
     },
     "AtomicTerm": {
         "score": 1,

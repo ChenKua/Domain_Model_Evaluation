@@ -1,0 +1,106 @@
+class SmartHome{
+    1 <@>- * SmartRoom rooms;
+    1 <@>- 1 Address address;
+    1 <@>- 1 ActivityLog activityLog;
+    1 <@>- * AutomationRule automationRules;
+}
+
+class Address{
+    String city;
+    String province;
+    String streetNumber;
+    String country;
+    String postalCode;
+    String streetName;
+}
+
+class SmartRoom{
+    String roomName;
+    1 -- * Device devices;
+}
+
+class Device{
+    abstract;
+    //The identifier should be unique and done automatically by the software as to avoid conflicting identifiers
+    autounique identifier;
+    boolean isActivated;
+    * -> 1 DeviceType device;
+}
+
+class SensorDevice{
+    //A SensorDevice will have different associations than the actuator device
+    isA Device;
+    1 -- * SensorReading readings;
+}
+
+class SensorReading{
+    Date timestamp;
+    1 -> 1 MeasuredValue measuredValue;
+}
+
+class MeasuredValue{
+    //The reasoning behind this class: A sensor may read a particular value: a window reading is a boolean, a temperature is an interger, etc. Ideally, we would implement generic types in the setup of the device
+    String nameOfValue;
+    String value;
+}
+
+class ActuatorDevice{
+    //A ActuatorDevice will have different associations than the sensor device
+    isA Device;
+    1 -- * ControlCommand commands;
+}
+
+class ControlCommand{
+    String commandName;
+    Date timestamp;
+    //The reason this is a string and not an enumeration is because in the description, we did not specify all the different statuses
+    String status;
+}
+
+class DeviceType {
+    //This is what the device does: temperature, movement, light, lock, etc.
+    String element;
+    //This is what the operation of device is: Sensor or controller
+    Operation operation;
+}
+
+class ActivityLog{
+    1 -> * ControlCommand commandsLogged;
+    1 -> * SensorReading sensorReadingsLogged;
+    1 -> * AutomationTrigger automationTriggers;
+}
+
+class AutomationRule{
+    //an automation has two parts: precondition and an action; if all the preconditions are true then the rule can be completed
+    * -> 1 AutomationPrecondition precondition;
+    //We have an association to the Actuator device, so we can have access to it's commands
+    * -> 1..* ActuatorDevice controllerToDo;
+    boolean isActivated;
+    //The rule that may be dependent on the current rule
+    * -- 0..1 AutomationRule dependentRule;
+}
+
+class AutomationTrigger{
+    //this class is used for the log
+    * -- 1 AutomationRule triggeredRule;
+    Date timestamp;
+}
+
+class AutomationPrecondition{
+    // We have access to the sensor device to have access to it's readings
+    * -- 1 SensorDevice sensorToCheck;
+
+    //Each Precondition can have another precondition that follows it: 
+    //ex 2 preconditions one for a temperature and one for a window: sensorToCheck.SensorReading.measuredValue < 18 AND nextPrecondition.sensorTocheck.SensorReading.measuredValue == false
+    * -- 0..1 AutomationPrecondition nextPrecondition;
+
+    //this boolean represents the statement for the precondition: ex: sensorToCheck.SensorReading.measuredValue < 18
+    boolean statement;
+    //This boolean represents the relation to the nextPrecondition
+    RelationType relationToNextPrecondition;
+}
+
+enum RelationType{AND,OR,NOT}
+
+enum Operation{CONTROLLER,SENSOR}
+

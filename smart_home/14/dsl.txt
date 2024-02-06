@@ -1,0 +1,83 @@
+Enumerations:
+
+
+Status(Requested, Completed, Failed)
+
+
+
+
+
+
+Classes:
+SHAS ( lazy String name)
+Infrastructure_Map(String name)
+User( String name)
+
+Room( String name)
+abstract Device( unique String identifier, boolean isActivited)
+Sensor_Device()
+Actuator_Device()
+Activity_Log( lazy String name)
+
+Sensor_Reading( Integer value, Date timeStamp)
+Control_Command( Date timeStamp)
+Automation_Rule(boolean isActivated)
+Precondition()
+Rational_Term()
+
+
+
+Action()
+Alert()
+Hierarchy( lazy String name)
+
+Relationships:
+
+1 SHAS contain  * User
+1 SHAS  contain  * Room
+0..1 SHAS contain  0..1 Activity_Log
+0..1 SHAS contain  0..1 Hierarchy
+0..1 SHAS contain  0..1 Infrastructure_Map
+
+1 Infrastructure_Map associate  * Room
+
+
+
+1 Infrastructure_Map associate  0..* Device
+1 Room contain  * Device
+
+
+1 Activity_Log associate  * Sensor_Reading
+1 Activity_Log associate  * Control_Command
+
+1 Sensor_Device contain  * Sensor_Reading
+
+1 Actuator_Device contain  * Control_Command 
+
+1 Automation_Rule contain  1 Precondition
+1 Automation_Rule contain  1 Action
+1 Automation_Rule associate * Alert
+
+0..1 Rational_Term associate  * Room
+0..1 Rational_Term associate  * Sensor_Device
+0..1 Rational_Term associate  * Actuator_Device
+0..1 Rational_Term associate  * Sensor_Reading
+0..1 Rational_Term associate  * Control_Command
+1 Precondition contain  * Rational_Term
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sensor_Device inherit  Device
+Actuator_Device inherit  Device
+
+1 Hierarchy contain  * Automation_Rule

@@ -36,9 +36,10 @@ Relationships:
 1 SHAS contain * User
 
 1 SmartHome contain 0..1 Address
-1 SmartHome contain 0..* Room
+1 SmartHome contain * Room
 1 SmartHome contain 0..1 ActivityLog
 * SmartHome associate * User
+1  SmartHome contain  * AlertRule
 
 1 Room contain * SensorDevice
 1 Room contain * ActuatorDevice
@@ -55,8 +56,9 @@ Relationships:
 1 AlertRule contain * CommandSequence
 
 * RelationalTerm associate 0..1  Room
-* RelationalTerm associate 0..1  Device
-* RelationalTerm associate 0..1  RuntimeElement
+* RelationalTerm associate 0..1  SensorDevice
+* RelationalTerm associate 0..1  ActuatorDevice
+* RelationalTerm associate 0..1  SensorReading
 * RelationalTerm associate 0..1  ControlCommand
 0..1 NotExpression associate 1 BooleanExpression
 
