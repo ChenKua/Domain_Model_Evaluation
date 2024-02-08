@@ -179,8 +179,8 @@
         "score": 1,
         "type": "regular",
         "dsl": "BooleanOperator( Operator operator)",
-        "counterpart": "BooleanOperator",
-        "attributes": {"Operator operator": {"score": 1, "counterpart": ("Operator operator","BooleanOperator")}},
+        "counterpart": "BinaryExpression",
+        "attributes": {"Operator operator": {"score": 1, "counterpart": ("BinaryOp binaryOp","BinaryExpression")}},
     },
     "Action": {
         "score": 1,
